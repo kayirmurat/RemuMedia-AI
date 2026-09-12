@@ -2,7 +2,7 @@ import "dotenv/config";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import { WorkflowEngine, totalCost } from "../core/workflow/engine.js";
+import { CostLimitExceededError, WorkflowEngine, totalCost } from "../core/workflow/engine.js";
 import { JsonArtifactRepository, JsonWorkflowRepository } from "../core/repository/jsonRepository.js";
 import { LocalStorageProvider } from "../core/adapters/storage/localStorageProvider.js";
 import { OpenAILLMProvider } from "../core/adapters/openai/openaiLLMProvider.js";
@@ -21,20 +21,28 @@ import { createSubtitlesStep } from "../core/workflow/steps/subtitles.js";
 import { createAssemblyStep } from "../core/workflow/steps/assembly.js";
 import { createQcStep } from "../core/workflow/steps/qc.js";
 
+const DEFAULT_MAX_COST_USD = 2.0;
+
 function parseArgs() {
   const args = process.argv.slice(2);
   const get = (flag: string) => {
     const i = args.indexOf(flag);
     return i >= 0 ? args[i + 1] : undefined;
   };
-  return { topic: get("--topic"), workflowId: get("--id") };
+  const maxCostArg = get("--max-cost") ?? process.env.MAX_COST_PER_VIDEO;
+  const maxCostUsd = maxCostArg !== undefined ? Number(maxCostArg) : DEFAULT_MAX_COST_USD;
+  return { topic: get("--topic"), workflowId: get("--id"), maxCostUsd };
 }
 
 async function main() {
-  const { topic, workflowId: existingId } = parseArgs();
+  const { topic, workflowId: existingId, maxCostUsd } = parseArgs();
   if (!topic && !existingId) {
-    console.error('Kullanım: npm run produce -- --topic "konu"');
+    console.error('Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5]');
     console.error('          npm run produce -- --id <workflow-id>   (kaldığı yerden devam)');
+    process.exit(1);
+  }
+  if (Number.isNaN(maxCostUsd) || maxCostUsd <= 0) {
+    console.error(`Geçersiz maliyet limiti: "${maxCostUsd}". Pozitif bir sayı olmalı.`);
     process.exit(1);
   }
 
@@ -94,9 +102,9 @@ async function main() {
     createQcStep(renderer, storage),
   ];
 
-  logger.info("Video üretim workflow'u başlıyor", { workflowId, topic: resolvedTopic });
+  logger.info("Video üretim workflow'u başlıyor", { workflowId, topic: resolvedTopic, maxCostUsd });
 
-  const finalState = await engine.run(workflowId, resolvedTopic, steps);
+  const finalState = await engine.run(workflowId, resolvedTopic, steps, { maxCostUsd });
 
   console.log("\n--- ÖZET ---");
   console.log(`Workflow ID: ${finalState.id}`);
@@ -106,6 +114,14 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (error instanceof CostLimitExceededError) {
+    console.error(`\n${error.message}`);
+    console.error(
+      "Tamamlanan adımlar korundu. Devam etmek istiyorsan --max-cost ile daha yüksek bir limit " +
+        've "--id <workflow-id>" ile tekrar çalıştır.',
+    );
+    process.exit(1);
+  }
   console.error("\nWorkflow başarısız oldu:", error instanceof Error ? error.message : error);
   console.error('Aynı komutu "--id <workflow-id>" ile tekrar çalıştırarak kaldığı yerden devam edebilirsin.');
   process.exit(1);

@@ -30,6 +30,23 @@ export class WorkflowStepError extends Error {
   }
 }
 
+export class CostLimitExceededError extends Error {
+  constructor(
+    public readonly costUsd: number,
+    public readonly maxCostUsd: number,
+    public readonly lastStep: string,
+  ) {
+    super(
+      `Maliyet limiti aşıldı: $${costUsd.toFixed(4)} (limit: $${maxCostUsd.toFixed(4)}) — ` +
+        `"${lastStep}" adımından sonra durduruldu.`,
+    );
+  }
+}
+
+export interface WorkflowRunOptions {
+  maxCostUsd?: number;
+}
+
 export class WorkflowEngine {
   constructor(
     private workflowRepo: WorkflowRepository,
@@ -37,7 +54,12 @@ export class WorkflowEngine {
     private logger: Logger,
   ) {}
 
-  async run(workflowId: string, topic: string, steps: StepDefinition[]): Promise<WorkflowState> {
+  async run(
+    workflowId: string,
+    topic: string,
+    steps: StepDefinition[],
+    options: WorkflowRunOptions = {},
+  ): Promise<WorkflowState> {
     let state = await this.workflowRepo.get(workflowId);
     if (!state) {
       state = {
@@ -95,7 +117,22 @@ export class WorkflowEngine {
           workflowId,
           costUsd: Number(output.costUsd.toFixed(4)),
         });
+
+        if (options.maxCostUsd !== undefined) {
+          const spent = totalCost(state);
+          if (spent > options.maxCostUsd) {
+            this.logger.error(`Maliyet limiti aşıldı, workflow durduruluyor`, {
+              workflowId,
+              spentUsd: Number(spent.toFixed(4)),
+              maxCostUsd: options.maxCostUsd,
+            });
+            throw new CostLimitExceededError(spent, options.maxCostUsd, step.name);
+          }
+        }
       } catch (error) {
+        if (error instanceof CostLimitExceededError) {
+          throw error;
+        }
         const message = error instanceof Error ? error.message : String(error);
         current.status = "failed";
         current.error = message;

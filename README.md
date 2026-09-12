@@ -53,6 +53,13 @@ JSON'ında (`data/workflows/<id>.json`) ve çalışma sonundaki özet çıktıs�
 görünür. Bir video şu an yaklaşık birkaç on sent civarında (sahne sayısına göre
 değişir).
 
+**Maliyet limiti**: toplam tahmini maliyet `.env`'deki `MAX_COST_PER_VIDEO`
+değerini (varsayılan $2.00) aşarsa üretim otomatik durur, tamamlanan adımlar
+korunur. Tek seferlik farklı bir limit için:
+```
+npm run produce -- --topic "konu" --max-cost 5
+```
+
 ## Sonraki fazlar
 
 Bu sadece Faz 1 (ilk gerçek video). Yol haritasının tamamı için
