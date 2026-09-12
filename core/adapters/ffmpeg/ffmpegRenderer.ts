@@ -24,6 +24,16 @@ const execFileAsync = promisify(execFile);
 // Bu, hem yakılan altyazıyı hem de ayrı .srt artifact'ını AYNI dosyadan üretmemizi sağlıyor.
 const SUBTITLE_FONT_NAME = "Liberation Sans";
 
+const FPS = 30;
+// Sahneler arası crossfade süresi. Her sahne bu kadar fazladan render edilip
+// geçiş bu "fazlalığı" tükettiği için gerçek anlatım süresi asla kırpılmıyor.
+const TRANSITION_DURATION = 0.5;
+// Ken Burns (yavaş yakınlaşma) için kaynak görsel bu oranda büyütülüyor,
+// zoompan sırasında piksel bozulması olmasın diye.
+const ZOOM_OVERSCAN = 1.3;
+const ZOOM_STEP_PER_FRAME = 0.001;
+const ZOOM_MAX = 1.15;
+
 export class FfmpegRenderer implements Renderer {
   private ffmpegBinary: string;
   private fontsDir: string;
@@ -55,22 +65,50 @@ export class FfmpegRenderer implements Renderer {
     fs.mkdirSync(this.tempDir, { recursive: true });
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
+    const bigWidth = Math.round(width * ZOOM_OVERSCAN);
+    const bigHeight = Math.round(height * ZOOM_OVERSCAN);
+    const renderDurations = scenes.map((s) => s.durationSeconds + TRANSITION_DURATION);
+
     const args: string[] = ["-y"];
-    for (const scene of scenes) {
-      args.push("-loop", "1", "-t", scene.durationSeconds.toFixed(3), "-i", scene.imagePath);
-    }
+    scenes.forEach((scene, i) => {
+      args.push(
+        "-loop",
+        "1",
+        "-framerate",
+        String(FPS),
+        "-t",
+        renderDurations[i]!.toFixed(3),
+        "-i",
+        scene.imagePath,
+      );
+    });
     for (const scene of scenes) {
       args.push("-i", scene.audioPath);
     }
 
     const videoChains = scenes.map(
       (_, i) =>
-        `[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=increase,` +
-        `crop=${width}:${height},setsar=1,fps=30[v${i}]`,
+        `[${i}:v]scale=${bigWidth}:${bigHeight}:force_original_aspect_ratio=increase,` +
+        `crop=${bigWidth}:${bigHeight},` +
+        `zoompan=z='min(zoom+${ZOOM_STEP_PER_FRAME},${ZOOM_MAX})':d=1:` +
+        `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${FPS},setsar=1[v${i}]`,
     );
 
+    let videoTail = "v0";
+    const xfadeParts: string[] = [];
+    let cumulative = 0;
+    for (let k = 1; k < scenes.length; k++) {
+      cumulative += renderDurations[k - 1]!;
+      const offset = cumulative - k * TRANSITION_DURATION;
+      const outLabel = k === scenes.length - 1 ? "vxfade" : `vx${k}`;
+      xfadeParts.push(
+        `[${videoTail}][v${k}]xfade=transition=fade:duration=${TRANSITION_DURATION}:` +
+          `offset=${offset.toFixed(3)}[${outLabel}]`,
+      );
+      videoTail = outLabel;
+    }
+
     const audioInputOffset = scenes.length;
-    const videoConcatInputs = scenes.map((_, i) => `[v${i}]`).join("");
     const audioConcatInputs = scenes.map((_, i) => `[${audioInputOffset + i}:a]`).join("");
 
     const subtitlesPart = escapeFilterValue(subtitlesPath);
@@ -81,9 +119,8 @@ export class FfmpegRenderer implements Renderer {
     );
 
     const filterComplex =
-      videoChains.join(";") +
-      `;${videoConcatInputs}concat=n=${scenes.length}:v=1:a=0[vcat]` +
-      `;[vcat]subtitles='${subtitlesPart}':fontsdir='${fontsDirPart}':force_style='${forceStyle}'[vout]` +
+      [...videoChains, ...xfadeParts].join(";") +
+      `;[${videoTail}]subtitles='${subtitlesPart}':fontsdir='${fontsDirPart}':force_style='${forceStyle}'[vout]` +
       `;${audioConcatInputs}concat=n=${scenes.length}:v=0:a=1[aout]`;
 
     args.push(
@@ -98,7 +135,7 @@ export class FfmpegRenderer implements Renderer {
       "-pix_fmt",
       "yuv420p",
       "-r",
-      "30",
+      String(FPS),
       "-c:a",
       "aac",
       "-b:a",
