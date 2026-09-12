@@ -1,8 +1,11 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { StorageProvider } from "../../providers/storage.js";
 import type { StepDefinition } from "../engine.js";
 import type { Scene } from "../../domain/types.js";
 import type { VoiceScene } from "./voice.js";
 import { createTextArtifact } from "../../artifacts/artifactFactory.js";
+import { newId } from "../../domain/ids.js";
 import { wrapText } from "../../text/wrapText.js";
 
 function formatSrtTime(totalSeconds: number): string {
@@ -14,7 +17,7 @@ function formatSrtTime(totalSeconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)},${pad(millis, 3)}`;
 }
 
-export function createSubtitlesStep(storage: StorageProvider): StepDefinition {
+export function createSubtitlesStep(storage: StorageProvider, tempDir: string): StepDefinition {
   return {
     name: "subtitles",
     async run({ workflowId, state }) {
@@ -45,7 +48,14 @@ export function createSubtitlesStep(storage: StorageProvider): StepDefinition {
         costUsd: 0,
       });
 
-      return { artifacts: [artifact], contextPatch: { subtitlesPath: artifact.path }, costUsd: 0 };
+      // ffmpeg'in "subtitles" filtresi yerel bir dosya yolu bekler; storage
+      // sağlayıcısının döndürdüğü yol (ör. Supabase modunda "supabase://...")
+      // ffmpeg için okunabilir değil, bu yüzden ayrıca yerel bir kopya yazılır.
+      await fs.mkdir(tempDir, { recursive: true });
+      const localSrtPath = path.join(tempDir, `${newId()}.srt`);
+      await fs.writeFile(localSrtPath, srtContent, "utf8");
+
+      return { artifacts: [artifact], contextPatch: { subtitlesPath: localSrtPath }, costUsd: 0 };
     },
   };
 }
