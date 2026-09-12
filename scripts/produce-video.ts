@@ -69,7 +69,7 @@ async function main() {
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
-  const supabaseBucket = process.env.SUPABASE_BUCKET ?? "remumedia";
+  const supabaseBucket = process.env.SUPABASE_BUCKET || "remumedia";
 
   let workflowRepo: WorkflowRepository;
   let artifactRepo: ArtifactRepository;
