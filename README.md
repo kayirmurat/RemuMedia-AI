@@ -43,8 +43,38 @@ npm run produce -- --id <workflow-id>
 
 ## Üretilen dosyalar nerede?
 
+**Supabase ayarlanmadıysa (varsayılan):**
 - `storage/` — üretilen görseller, ses dosyaları ve final video (git'e girmez)
 - `data/` — her üretimin durumu ve artifact kayıtları, JSON olarak (git'e girmez)
+
+**Supabase ayarlandıysa** (bkz. aşağıdaki "Supabase kurulumu"): workflow/artifact
+durumu Supabase Postgres'te (`workflows`, `artifacts` tabloları), üretilen
+dosyalar Supabase Storage'da (`remumedia` bucket'ı) tutulur. Final video yine
+de terminaldeki özette yerel bir dosya yolu olarak gösterilir (render sırasında
+oraya yazılır, sonra Supabase'e de yüklenir).
+
+## Supabase kurulumu (opsiyonel — Faz 2)
+
+Bu adım olmadan da sistem tam çalışır (yerel JSON + yerel disk kullanır).
+Supabase eklemek, üretimleri kalıcı bir veritabanında/bulut depoda tutmak
+içindir.
+
+1. supabase.com'da bir proje oluştur.
+2. **Project Settings > Data API** (veya **API Keys**) sayfasından **Project URL**
+   ve **secret key** (service_role) değerlerini al.
+3. `.env` dosyana ekle:
+   ```
+   SUPABASE_URL=https://xxxxx.supabase.co
+   SUPABASE_SECRET_KEY=sb_secret_...
+   ```
+4. [`supabase/schema.sql`](./supabase/schema.sql) dosyasının içeriğini kopyala,
+   Supabase Dashboard'da **SQL Editor**'e yapıştır, **Run**'a bas. (`workflows`
+   ve `artifacts` tablolarını oluşturur.)
+5. Storage bucket'ı (`remumedia`) elle oluşturmana gerek yok — program ilk
+   çalıştığında yoksa otomatik oluşturur.
+
+Bu iki değer `.env`'de dolu olduğu sürece program otomatik olarak Supabase'i
+kullanır; boşsa sessizce yerel moda döner.
 
 ## Maliyet
 

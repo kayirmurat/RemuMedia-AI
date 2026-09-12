@@ -23,8 +23,8 @@ değiştirilebilir bir temel kurmaktır.
 | Görsel üretim | OpenAI Images (`gpt-image-1`), `ImageProvider` arkasında | Ayrı bir sağlayıcı entegre etmeden tek vendor ile başlamak en hızlı yol |
 | Seslendirme (TTS) | OpenAI TTS (`tts-1`), `VoiceProvider` arkasında | Aynı gerekçe |
 | Video render/birleştirme | `ffmpeg` (statik binary, npm üzerinden) | Deterministik montaj; AI üretimi ile render katmanı kesin olarak ayrılıyor (bkz. madde 24 — "AI generates assets, renderer assembles deterministically"). Not: bu statik derlemede `drawtext` filtresi yok (bilinen bir kısıt), bu yüzden altyazılar libass tabanlı `subtitles` filtresiyle yakılıyor — bu ayrıca "subtitles" artifact'ı ile yakılan altyazının aynı dosya olmasını sağlıyor. |
-| Kalıcılık (Faz 1) | Yerel JSON dosyaları (`data/`) | Gerçek video üretimini kanıtlamadan veritabanı kurulumuna zaman harcamamak; `WorkflowRepository`/`ArtifactRepository` arayüzü sayesinde Faz 2/3'te Supabase'e geçiş kod değişikliği gerektirmez |
-| Dosya depolama (Faz 1) | Yerel disk (`storage/`) | Aynı gerekçe; `StorageProvider` arkasında |
+| Kalıcılık | Yerel JSON (`data/`) varsayılan; Supabase Postgres opsiyonel (Faz 2, bkz. aşağıda) | `WorkflowRepository`/`ArtifactRepository` arayüzü sayesinde geçiş kod değişikliği gerektirmedi |
+| Dosya depolama | Yerel disk (`storage/`) varsayılan; Supabase Storage opsiyonel (Faz 2) | Aynı gerekçe; `StorageProvider` arkasında |
 
 **Not:** Sağlayıcı seçimleri doküman madde 6/7 gereği soyutlama arkasında —
 `core/providers/*` arayüzlerini karşılayan yeni bir adaptör yazılarak (örn.
@@ -77,8 +77,28 @@ Supabase/gerçek veritabanı, çoklu ajan mimarisi, insan onay UI'ı, çoklu pla
 dönüşümü, çoklu kanal, Riona entegrasyonu, gelişmiş maliyet limitleri/bütçe kontrolü.
 Bunlar Faz 2+'da, ilk video kanıtlandıktan sonra eklenecek.
 
-## Sonraki adım (Faz 2 önizlemesi)
+## Faz 2 — tamamlananlar
 
-Faz 1 gerçek bir video ürettikten sonra: Supabase'e geçiş (`WorkflowRepository`/
-`ArtifactRepository`/`StorageProvider`'ın Supabase implementasyonları), daha
-sağlam retry/hata raporlama, basit bir onay adımı ve maliyet limiti.
+Faz 1'in ilk gerçek videosu üretildikten sonra eklendi:
+
+- **Ken Burns + crossfade** (`core/adapters/ffmpeg/ffmpegRenderer.ts`): statik
+  sahne görselleri artık yavaşça yakınlaşıyor (zoompan) ve aralarında sert kesim
+  yerine crossfade (xfade) var. Her sahne geçiş süresi kadar fazladan render
+  edilip bu fazlalık geçişte tüketildiği için gerçek anlatım süresi kırpılmıyor.
+- **Maliyet limiti** (`MAX_COST_PER_VIDEO`, `--max-cost`): workflow engine her
+  adımdan sonra toplam maliyeti kontrol eder, limit aşılırsa bir sonraki
+  (muhtemelen daha pahalı) adımı hiç başlatmadan durur.
+- **Otomatik retry** (`core/util/retry.ts`): OpenAI çağrılarında geçici hatalar
+  (429/5xx/bağlantı kopması) exponential backoff ile otomatik tekrar denenir;
+  kalıcı hatalar (401 gibi) hemen fırlatılır.
+- **Supabase'e geçiş** (opsiyonel, `core/adapters/supabase/*`):
+  `WorkflowRepository`/`ArtifactRepository`/`StorageProvider` arayüzlerinin
+  Supabase implementasyonları. `.env`'de `SUPABASE_URL`+`SUPABASE_SECRET_KEY`
+  varsa otomatik kullanılır, yoksa Faz 1'deki yerel JSON/disk moduna sessizce
+  düşer — provider soyutlaması sayesinde `produce-video.ts` dışında hiçbir
+  workflow adımı bu değişiklikten haberdar değil. Şema: `supabase/schema.sql`.
+
+## Sonraki adım (Faz 3 önizlemesi)
+
+Minimal bir arayüz (içerik/workflow/artifact/onay durumunu görmek için),
+insan onay adımı (yayınlama devreye girince), temel QC sağlamlaştırma.

@@ -4,7 +4,14 @@ import { randomUUID } from "node:crypto";
 
 import { CostLimitExceededError, WorkflowEngine, totalCost } from "../core/workflow/engine.js";
 import { JsonArtifactRepository, JsonWorkflowRepository } from "../core/repository/jsonRepository.js";
+import type { ArtifactRepository, WorkflowRepository } from "../core/repository/types.js";
 import { LocalStorageProvider } from "../core/adapters/storage/localStorageProvider.js";
+import type { StorageProvider } from "../core/providers/storage.js";
+import { createSupabaseClient } from "../core/adapters/supabase/supabaseClient.js";
+import { ensureBucket } from "../core/adapters/supabase/ensureBucket.js";
+import { SupabaseWorkflowRepository } from "../core/adapters/supabase/supabaseWorkflowRepository.js";
+import { SupabaseArtifactRepository } from "../core/adapters/supabase/supabaseArtifactRepository.js";
+import { SupabaseStorageProvider } from "../core/adapters/supabase/supabaseStorageProvider.js";
 import { OpenAILLMProvider } from "../core/adapters/openai/openaiLLMProvider.js";
 import { OpenAIImageProvider } from "../core/adapters/openai/openaiImageProvider.js";
 import { OpenAIVoiceProvider } from "../core/adapters/openai/openaiVoiceProvider.js";
@@ -59,9 +66,29 @@ async function main() {
   const fontFile = path.join(rootDir, "assets", "fonts", "LiberationSans-Bold.ttf");
 
   const logger = createLogger();
-  const workflowRepo = new JsonWorkflowRepository(dataDir);
-  const artifactRepo = new JsonArtifactRepository(dataDir);
-  const storage = new LocalStorageProvider(storageDir);
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+  const supabaseBucket = process.env.SUPABASE_BUCKET ?? "remumedia";
+
+  let workflowRepo: WorkflowRepository;
+  let artifactRepo: ArtifactRepository;
+  let storage: StorageProvider;
+
+  if (supabaseUrl && supabaseSecretKey) {
+    const client = createSupabaseClient(supabaseUrl, supabaseSecretKey);
+    await ensureBucket(client, supabaseBucket);
+    workflowRepo = new SupabaseWorkflowRepository(client);
+    artifactRepo = new SupabaseArtifactRepository(client);
+    storage = new SupabaseStorageProvider(client, supabaseBucket);
+    logger.info("Depolama: Supabase kullanılıyor", { bucket: supabaseBucket });
+  } else {
+    workflowRepo = new JsonWorkflowRepository(dataDir);
+    artifactRepo = new JsonArtifactRepository(dataDir);
+    storage = new LocalStorageProvider(storageDir);
+    logger.info("Depolama: yerel dosya sistemi kullanılıyor (SUPABASE_URL/SUPABASE_SECRET_KEY yok)");
+  }
+
   const registry = new ContentRegistry(workflowRepo);
 
   const workflowId = existingId ?? randomUUID();
