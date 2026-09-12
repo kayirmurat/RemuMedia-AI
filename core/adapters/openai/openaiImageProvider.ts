@@ -22,7 +22,7 @@ export class OpenAIImageProvider implements ImageProvider {
     const response = await this.client.images.generate({
       model: this.model,
       prompt,
-      size: options.size ?? "1024x1792",
+      size: options.size ?? "1024x1536",
     });
 
     const b64 = response.data?.[0]?.b64_json;

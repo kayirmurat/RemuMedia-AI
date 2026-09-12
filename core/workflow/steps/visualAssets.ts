@@ -21,7 +21,7 @@ export function createVisualAssetsStep(image: ImageProvider, storage: StoragePro
       let model: string | undefined;
 
       for (const scene of scenes) {
-        const result = await image.generate(scene.imagePrompt, { size: "1024x1792" });
+        const result = await image.generate(scene.imagePrompt, { size: "1024x1536" });
         totalCost += result.costUsd;
         provider = result.provider;
         model = result.model;
