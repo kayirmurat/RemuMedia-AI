@@ -11,6 +11,9 @@ export function createBriefStep(llm: LLMProvider, storage: StorageProvider): Ste
     name: "brief",
     async run({ workflowId, state }) {
       const research = state.context.research as string;
+      const revisionNotes = state.context.revisionNotes as string[] | undefined;
+      const latestFeedback = revisionNotes?.at(-1);
+
       const prompt =
         `Konu: "${state.topic}"\n\nAraştırma notları:\n${research}\n\n` +
         "Bu araştırmadan 45-90 saniyelik kısa bir video için içerik brief'i hazırla:\n" +
@@ -18,7 +21,10 @@ export function createBriefStep(llm: LLMProvider, storage: StorageProvider): Ste
         "- Ana açı: bu video neden farklı/değerli\n" +
         "- Hedef kitle\n" +
         "- Video sonunda izleyicide kalacak tek bir ana fikir\n" +
-        "Düz metin olarak yaz.";
+        "Düz metin olarak yaz." +
+        (latestFeedback
+          ? `\n\nÖNEMLİ — kullanıcı önceki taslak için şu geri bildirimi verdi, bunu mutlaka dikkate al:\n"${latestFeedback}"`
+          : "");
 
       const result = await llm.generate(prompt, { system: SYSTEM_PROMPT, temperature: 0.7 });
 

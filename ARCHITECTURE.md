@@ -98,7 +98,41 @@ Faz 1'in ilk gerçek videosu üretildikten sonra eklendi:
   düşer — provider soyutlaması sayesinde `produce-video.ts` dışında hiçbir
   workflow adımı bu değişiklikten haberdar değil. Şema: `supabase/schema.sql`.
 
-## Sonraki adım (Faz 3 önizlemesi)
+## Faz 3 — tamamlananlar
 
-Minimal bir arayüz (içerik/workflow/artifact/onay durumunu görmek için),
-insan onay adımı (yayınlama devreye girince), temel QC sağlamlaştırma.
+Minimal, fonksiyonel bir arayüz (`dashboard/` — ayrı bir Next.js uygulaması,
+kendi `package.json`/`tsconfig.json`'ı var; CLI'ın NodeNext modülleriyle
+çakışmasın diye bilinçli olarak ayrı bir alt proje. Vercel'de "Root
+Directory" = `dashboard` olarak deploy edilir):
+
+- **Konu → araştırma → senaryo → sahne planı hazır olunca üretim otomatik
+  durur** (`--stop-after visualPlan`). Dashboard bu noktada script'i ve
+  sahne sahne görsel planını gösterir; kullanıcı ya **"Onayla ve Devam Et"**
+  der (görsel/ses/montaj/qc çalışır — asıl maliyetli kısım) ya da bir geri
+  bildirim yazıp **"Yeniden Yaz"** der (brief+senaryo+sahne planı sıfırlanıp
+  geri bildirimle yeniden üretilir, araştırma tekrar yapılmaz). Bu, madde
+  9'un "insan onayı" ilkesinin üretim öncesi bir versiyonu — henüz
+  yayınlama yok, ama pahalı adımlardan önce insan onayı var.
+- **Üretimi tetikleme**: dashboard'daki "Yeni Video Üret" butonu GitHub
+  Actions'ı (`.github/workflows/produce-video.yml`, `workflow_dispatch`)
+  tetikler — Vercel'in saniyeler süren istek limiti bir video üretiminin
+  10-20 dakikasını karşılayamayacağı için (aynı yöntem riona-ai'nin toplantı
+  botunda da kullanılıyor). İş GitHub'ın kendi runner'ında `npm run produce`
+  çalıştırır, ilerlemeyi zaten Supabase'e yazdığı için dashboard ayrıca bir
+  "iş durumu" takip mekanizmasına ihtiyaç duymadan sadece tabloyu okuyarak
+  anlık ilerlemeyi gösterir.
+- **Basit tek şifreli erişim koruması** (`DASHBOARD_PASSWORD`, opsiyonel):
+  madde 33 "sofistike izin sistemi kurma" diyor, bu yüzden gerçek
+  kullanıcı/rol sistemi yok — sadece dashboard'ın tamamen açık olmasını
+  önleyen tek bir paylaşılan şifre.
+- **Final video için onay butonu**: artifact'ın `metadata.approved`
+  alanına yazar (yeni bir tablo/kolon gerekmedi).
+
+Kapsam dışı bırakılan (bilinçli): üretimi doğrudan bir web isteğinden
+çalıştırmak (Vercel süre limiti nedeniyle imkansız, bu yüzden GitHub
+Actions'a devredildi), gerçek kullanıcı hesapları/roller.
+
+## Sonraki adım (Faz 4 önizlemesi)
+
+Kanıtlanmış workflow sorumluluklarını uzmanlaşmış ajanlara dönüştürmek
+(sadece uzmanlaşmanın ölçülebilir fayda sağladığı yerlerde).

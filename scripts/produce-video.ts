@@ -36,15 +36,15 @@ function parseArgs() {
     const i = args.indexOf(flag);
     return i >= 0 ? args[i + 1] : undefined;
   };
-  const maxCostArg = get("--max-cost") ?? process.env.MAX_COST_PER_VIDEO;
-  const maxCostUsd = maxCostArg !== undefined ? Number(maxCostArg) : DEFAULT_MAX_COST_USD;
-  return { topic: get("--topic"), workflowId: get("--id"), maxCostUsd };
+  const maxCostArg = get("--max-cost") || process.env.MAX_COST_PER_VIDEO;
+  const maxCostUsd = maxCostArg ? Number(maxCostArg) : DEFAULT_MAX_COST_USD;
+  return { topic: get("--topic"), workflowId: get("--id"), maxCostUsd, stopAfter: get("--stop-after") };
 }
 
 async function main() {
-  const { topic, workflowId: existingId, maxCostUsd } = parseArgs();
+  const { topic, workflowId: existingId, maxCostUsd, stopAfter } = parseArgs();
   if (!topic && !existingId) {
-    console.error('Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5]');
+    console.error('Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5] [--stop-after visualPlan]');
     console.error('          npm run produce -- --id <workflow-id>   (kaldığı yerden devam)');
     process.exit(1);
   }
@@ -117,7 +117,7 @@ async function main() {
 
   const engine = new WorkflowEngine(workflowRepo, artifactRepo, logger);
 
-  const steps = [
+  let steps = [
     createResearchStep(llm, storage),
     createBriefStep(llm, storage),
     createScriptStep(llm, storage),
@@ -129,7 +129,16 @@ async function main() {
     createQcStep(renderer, storage),
   ];
 
-  logger.info("Video üretim workflow'u başlıyor", { workflowId, topic: resolvedTopic, maxCostUsd });
+  if (stopAfter) {
+    const cutoff = steps.findIndex((s) => s.name === stopAfter);
+    if (cutoff === -1) {
+      console.error(`Geçersiz --stop-after değeri: "${stopAfter}". Geçerli adımlar: ${steps.map((s) => s.name).join(", ")}`);
+      process.exit(1);
+    }
+    steps = steps.slice(0, cutoff + 1);
+  }
+
+  logger.info("Video üretim workflow'u başlıyor", { workflowId, topic: resolvedTopic, maxCostUsd, stopAfter });
 
   const finalState = await engine.run(workflowId, resolvedTopic, steps, { maxCostUsd });
 
@@ -137,7 +146,11 @@ async function main() {
   console.log(`Workflow ID: ${finalState.id}`);
   console.log(`Konu: ${finalState.topic}`);
   console.log(`Toplam tahmini maliyet: $${totalCost(finalState).toFixed(4)}`);
-  console.log(`Final video: ${finalState.context.finalVideoPath}`);
+  if (finalState.context.finalVideoPath) {
+    console.log(`Final video: ${finalState.context.finalVideoPath}`);
+  } else {
+    console.log(`"${stopAfter}" adımından sonra durduruldu (inceleme için). Devam etmek için --id ile tekrar çalıştır.`);
+  }
 }
 
 main().catch((error) => {

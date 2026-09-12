@@ -1,0 +1,178 @@
+import { notFound } from "next/navigation";
+import { getSupabaseConfigError, supabaseServer } from "../../../lib/supabase";
+import { readArtifactText } from "../../../lib/content";
+import { workflowPhase, totalCost, STEP_ORDER, type WorkflowRow, type ArtifactRow } from "../../../lib/types";
+import ReviewActions from "./ReviewActions";
+import ApproveButton from "./ApproveButton";
+import ArtifactPreview from "./ArtifactPreview";
+
+export const dynamic = "force-dynamic";
+
+const STEP_LABEL: Record<string, string> = {
+  research: "Araştırma",
+  brief: "Brief",
+  script: "Senaryo",
+  visualPlan: "Sahne planı",
+  visualAssets: "Görseller",
+  voice: "Seslendirme",
+  subtitles: "Altyazı",
+  assembly: "Montaj",
+  qc: "Kalite kontrolü",
+};
+
+interface Scene {
+  narration: string;
+  imagePrompt: string;
+}
+
+export default async function WorkflowDetailPage({ params }: { params: { id: string } }) {
+  const configError = getSupabaseConfigError();
+  if (configError) {
+    return <p style={{ color: "var(--danger)" }}>{configError}</p>;
+  }
+
+  const client = supabaseServer();
+  const { data: workflowData } = await client.from("workflows").select("*").eq("id", params.id).maybeSingle();
+  if (!workflowData) notFound();
+  const workflow = workflowData as WorkflowRow;
+
+  const { data: artifactsData } = await client
+    .from("artifacts")
+    .select("*")
+    .eq("workflow_id", params.id)
+    .order("created_at", { ascending: true });
+  const artifacts = (artifactsData ?? []) as ArtifactRow[];
+
+  const phase = workflowPhase(workflow.steps);
+  const findLatest = (type: string) => [...artifacts].reverse().find((a) => a.type === type);
+
+  let scriptText = "";
+  let briefText = "";
+  let scenes: Scene[] = [];
+
+  if (phase === "review" || phase === "failed" || phase === "running") {
+    const scriptArtifact = findLatest("script");
+    const briefArtifact = findLatest("brief");
+    const planArtifact = findLatest("visual_plan");
+    if (scriptArtifact) scriptText = await readArtifactText(scriptArtifact.path);
+    if (briefArtifact) briefText = await readArtifactText(briefArtifact.path);
+    if (planArtifact) {
+      try {
+        scenes = JSON.parse(await readArtifactText(planArtifact.path));
+      } catch {
+        scenes = [];
+      }
+    }
+  }
+
+  const finalVideoArtifact = findLatest("final_video");
+  const imageArtifacts = artifacts.filter((a) => a.type === "image");
+
+  return (
+    <>
+      <p>
+        <a href="/">&larr; Tüm üretimler</a>
+      </p>
+      <h1 style={{ fontSize: 20 }}>{workflow.topic}</h1>
+      <p className="muted">
+        Oluşturuldu: {new Date(workflow.created_at).toLocaleString("tr-TR")} · Toplam maliyet: $
+        {totalCost(workflow.steps).toFixed(4)}
+      </p>
+
+      <div className="card">
+        <h2 style={{ marginTop: 0, fontSize: 15 }}>Adım durumu</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Adım</th>
+              <th>Durum</th>
+              <th>Maliyet</th>
+            </tr>
+          </thead>
+          <tbody>
+            {STEP_ORDER.filter((name) => workflow.steps[name]).map((name) => {
+              const s = workflow.steps[name]!;
+              return (
+                <tr key={name}>
+                  <td>{STEP_LABEL[name] ?? name}</td>
+                  <td>
+                    {s.status === "completed" && "✅ Tamam"}
+                    {s.status === "failed" && `❌ ${s.error ?? "Hata"}`}
+                    {s.status === "running" && "⏳ Çalışıyor"}
+                    {s.status === "pending" && "⏸ Bekliyor"}
+                  </td>
+                  <td>${s.cost.toFixed(4)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {phase === "review" && (
+        <div className="card">
+          <h2 style={{ marginTop: 0, fontSize: 15 }}>İnceleme — senaryo &amp; sahne planı</h2>
+          {briefText && (
+            <>
+              <p className="muted" style={{ marginBottom: 4 }}>
+                Brief
+              </p>
+              <pre>{briefText}</pre>
+            </>
+          )}
+          <p className="muted" style={{ marginBottom: 4 }}>
+            Senaryo
+          </p>
+          <pre>{scriptText}</pre>
+          {scenes.length > 0 && (
+            <>
+              <p className="muted" style={{ marginBottom: 4 }}>
+                Sahne planı ({scenes.length} sahne)
+              </p>
+              {scenes.map((s, i) => (
+                <div key={i} style={{ marginBottom: 10 }}>
+                  <strong>Sahne {i + 1}:</strong> {s.narration}
+                  <div className="muted">Görsel: {s.imagePrompt}</div>
+                </div>
+              ))}
+            </>
+          )}
+          <ReviewActions workflowId={workflow.id} />
+        </div>
+      )}
+
+      {phase === "failed" && (
+        <div className="card">
+          <h2 style={{ marginTop: 0, fontSize: 15, color: "var(--danger)" }}>
+            Hata
+          </h2>
+          <p>Bir adım başarısız oldu (yukarıdaki tabloda hangisi olduğunu görebilirsin).</p>
+        </div>
+      )}
+
+      {phase === "completed" && finalVideoArtifact && (
+        <div className="card">
+          <h2 style={{ marginTop: 0, fontSize: 15 }}>Final video</h2>
+          <ArtifactPreview artifact={finalVideoArtifact} />
+          <div style={{ marginTop: 10 }}>
+            <ApproveButton
+              artifactId={finalVideoArtifact.id}
+              approved={Boolean(finalVideoArtifact.metadata.approved)}
+            />
+          </div>
+        </div>
+      )}
+
+      {imageArtifacts.length > 0 && (
+        <div className="card">
+          <h2 style={{ marginTop: 0, fontSize: 15 }}>Sahne görselleri</h2>
+          <div className="scene-grid">
+            {imageArtifacts.map((a) => (
+              <ArtifactPreview key={a.id} artifact={a} />
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
