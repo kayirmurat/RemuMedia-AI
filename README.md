@@ -80,8 +80,11 @@ kullanır; boşsa sessizce yerel moda döner.
 
 Her adımın tahmini maliyeti (OpenAI fiyatlandırmasına göre yaklaşık) workflow
 JSON'ında (`data/workflows/<id>.json`) ve çalışma sonundaki özet çıktısında
-görünür. Bir video şu an yaklaşık birkaç on sent civarında (sahne sayısına göre
-değişir).
+görünür. Bir video şu an sahne sayısına göre yaklaşık **$0.6-1.0** civarında
+(maliyetin büyük kısmı görsel üretiminden geliyor). Gerçek harcamayı periyodik
+olarak platform.openai.com/usage üzerinden kontrol etmen önerilir — buradaki
+tahminler OpenAI'nin token bazlı fiyatlandırmasına dayanan yaklaşık
+değerlerdir, kesin fatura değildir.
 
 **Maliyet limiti**: toplam tahmini maliyet `.env`'deki `MAX_COST_PER_VIDEO`
 değerini (varsayılan $2.00) aşarsa üretim otomatik durur, tamamlanan adımlar
