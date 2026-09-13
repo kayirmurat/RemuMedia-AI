@@ -18,7 +18,14 @@ export function supabaseServer() {
   if (!url || !secretKey) {
     throw new Error("SUPABASE_URL / SUPABASE_SECRET_KEY tanımlı değil.");
   }
-  return createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  return createClient(url, secretKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    // Vercel'in Data Cache'i, force-dynamic sayfalarda bile üçüncü taraf
+    // fetch çağrılarını (supabase-js dahil) önbelleğe alabiliyor — yeni
+    // workflow'lar bu yüzden anasayfa listesinde görünmüyordu. Her istekte
+    // açıkça no-store zorlanarak önlendi.
+    global: { fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) },
+  });
 }
 
 export function supabaseBucket(): string {
