@@ -6,8 +6,13 @@ import type { ImageGenerateOptions, ImageProvider, ImageResult } from "../../pro
 import { withRetry } from "../../util/retry.js";
 import { createLogger, type Logger } from "../../logger/logger.js";
 
-// Yaklaşık fiyatlandırma (gpt-image-1, standard kalite) — sadece TAHMİN.
-const PRICE_PER_IMAGE_USD = 0.04;
+// Yaklaşık fiyatlandırma (gpt-image-1, "medium" kalite, 1024x1536) — sadece TAHMİN.
+// Önceki tahmin ($0.04) "quality" parametresi hiç belirtilmediği için modelin
+// varsayılan (auto → genelde "high") kaliteyi seçmesine dayanıyordu; gerçek
+// OpenAI faturası bunun ~4 katı çıktı. Artık kaliteyi açıkça "medium" olarak
+// sabitliyoruz — hem maliyeti düşürür hem de tahmini gerçeğe yaklaştırır.
+const PRICE_PER_IMAGE_USD = 0.065;
+const IMAGE_QUALITY = "medium";
 
 export class OpenAIImageProvider implements ImageProvider {
   private client: OpenAI;
@@ -29,6 +34,7 @@ export class OpenAIImageProvider implements ImageProvider {
           model: this.model,
           prompt,
           size: options.size ?? "1024x1536",
+          quality: IMAGE_QUALITY,
         }),
       {
         onRetry: (attempt, error, delayMs) =>
