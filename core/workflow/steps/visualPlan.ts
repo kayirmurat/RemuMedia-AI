@@ -13,14 +13,19 @@ interface RawScene {
   imagePrompt: string;
 }
 
-export function createVisualPlanStep(llm: LLMProvider, storage: StorageProvider): StepDefinition {
+export function createVisualPlanStep(
+  llm: LLMProvider,
+  storage: StorageProvider,
+  sceneCount?: number,
+): StepDefinition {
   return {
     name: "visualPlan",
     async run({ workflowId, state }) {
       const script = state.context.script as string;
+      const sceneCountText = sceneCount ? `TAM OLARAK ${sceneCount} sahneye` : "6-9 sahneye";
       const prompt =
         `Anlatım senaryosu:\n${script}\n\n` +
-        "Bu senaryoyu 6-9 sahneye böl. Her sahne için:\n" +
+        `Bu senaryoyu ${sceneCountText} böl. Her sahne için:\n` +
         '- "narration": o sahnede seslendirilecek metnin senaryodan BİREBİR alınan parçası (tüm parçalar birleşince senaryonun tamamını oluşturmalı)\n' +
         '- "imagePrompt": bu sahneyi görselleştirecek, İngilizce, detaylı bir görsel üretim promptu (temiz, fotogerçekçi veya editoryal illüstrasyon stili; görselde YAZI/METİN olmasın)\n\n' +
         "SADECE geçerli bir JSON dizisi döndür, başka hiçbir açıklama yazma:\n" +

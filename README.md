@@ -94,6 +94,13 @@ korunur. Tek seferlik farklı bir limit için:
 npm run produce -- --topic "konu" --max-cost 5
 ```
 
+**Ucuz test üretimi**: `--scenes` ile sahne sayısını (dolayısıyla görsel/ses
+sayısını ve süreyi) sınırlayarak çok daha düşük maliyetli bir deneme
+yapabilirsin — kod değişikliklerini doğrulamak için idealdir:
+```
+npm run produce -- --topic "test konusu" --scenes 5
+```
+
 ## Dashboard kurulumu (Faz 3)
 
 `dashboard/` klasöründe ayrı bir Next.js uygulaması var: konuları/üretimleri

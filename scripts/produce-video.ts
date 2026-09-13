@@ -39,18 +39,32 @@ function parseArgs() {
   };
   const maxCostArg = get("--max-cost") || process.env.MAX_COST_PER_VIDEO;
   const maxCostUsd = maxCostArg ? Number(maxCostArg) : DEFAULT_MAX_COST_USD;
-  return { topic: get("--topic"), workflowId: get("--id"), maxCostUsd, stopAfter: get("--stop-after") };
+  const scenesArg = get("--scenes");
+  const sceneCount = scenesArg ? Number(scenesArg) : undefined;
+  return {
+    topic: get("--topic"),
+    workflowId: get("--id"),
+    maxCostUsd,
+    stopAfter: get("--stop-after"),
+    sceneCount,
+  };
 }
 
 async function main() {
-  const { topic, workflowId: existingId, maxCostUsd, stopAfter } = parseArgs();
+  const { topic, workflowId: existingId, maxCostUsd, stopAfter, sceneCount } = parseArgs();
   if (!topic && !existingId) {
-    console.error('Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5] [--stop-after contentReview]');
+    console.error(
+      'Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5] [--stop-after contentReview] [--scenes 5]',
+    );
     console.error('          npm run produce -- --id <workflow-id>   (kaldığı yerden devam)');
     process.exit(1);
   }
   if (Number.isNaN(maxCostUsd) || maxCostUsd <= 0) {
     console.error(`Geçersiz maliyet limiti: "${maxCostUsd}". Pozitif bir sayı olmalı.`);
+    process.exit(1);
+  }
+  if (sceneCount !== undefined && (Number.isNaN(sceneCount) || sceneCount < 1)) {
+    console.error(`Geçersiz --scenes değeri: "${sceneCount}". 1 veya daha büyük bir tam sayı olmalı.`);
     process.exit(1);
   }
 
@@ -121,8 +135,8 @@ async function main() {
   let steps = [
     createResearchStep(llm, storage, logger),
     createBriefStep(llm, storage),
-    createScriptStep(llm, storage),
-    createVisualPlanStep(llm, storage),
+    createScriptStep(llm, storage, sceneCount ? sceneCount * 4 : undefined),
+    createVisualPlanStep(llm, storage, sceneCount),
     createContentReviewStep(llm, storage, registry),
     createVisualAssetsStep(image, storage),
     createVoiceStep(voice, storage),
