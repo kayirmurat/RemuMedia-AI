@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WorkflowState } from "../../domain/types.js";
 import type { WorkflowRepository } from "../../repository/types.js";
+import { withRetry } from "../../util/retry.js";
 
 interface WorkflowRow {
   id: string;
@@ -40,19 +41,25 @@ export class SupabaseWorkflowRepository implements WorkflowRepository {
   ) {}
 
   async get(id: string): Promise<WorkflowState | undefined> {
-    const { data, error } = await this.client.from(this.table).select("*").eq("id", id).maybeSingle();
-    if (error) throw new Error(`Supabase workflow okuma hatası: ${error.message}`);
-    return data ? toState(data as WorkflowRow) : undefined;
+    return withRetry(async () => {
+      const { data, error } = await this.client.from(this.table).select("*").eq("id", id).maybeSingle();
+      if (error) throw new Error(`Supabase workflow okuma hatası: ${error.message}`);
+      return data ? toState(data as WorkflowRow) : undefined;
+    });
   }
 
   async save(state: WorkflowState): Promise<void> {
-    const { error } = await this.client.from(this.table).upsert(toRow(state));
-    if (error) throw new Error(`Supabase workflow yazma hatası: ${error.message}`);
+    await withRetry(async () => {
+      const { error } = await this.client.from(this.table).upsert(toRow(state));
+      if (error) throw new Error(`Supabase workflow yazma hatası: ${error.message}`);
+    });
   }
 
   async list(): Promise<WorkflowState[]> {
-    const { data, error } = await this.client.from(this.table).select("*");
-    if (error) throw new Error(`Supabase workflow listeleme hatası: ${error.message}`);
-    return (data as WorkflowRow[]).map(toState);
+    return withRetry(async () => {
+      const { data, error } = await this.client.from(this.table).select("*");
+      if (error) throw new Error(`Supabase workflow listeleme hatası: ${error.message}`);
+      return (data as WorkflowRow[]).map(toState);
+    });
   }
 }

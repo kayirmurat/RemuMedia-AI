@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Artifact, ArtifactType } from "../../domain/types.js";
 import type { ArtifactRepository } from "../../repository/types.js";
+import { withRetry } from "../../util/retry.js";
 
 interface ArtifactRow {
   id: string;
@@ -55,13 +56,17 @@ export class SupabaseArtifactRepository implements ArtifactRepository {
   ) {}
 
   async save(artifact: Artifact): Promise<void> {
-    const { error } = await this.client.from(this.table).upsert(toRow(artifact));
-    if (error) throw new Error(`Supabase artifact yazma hatası: ${error.message}`);
+    await withRetry(async () => {
+      const { error } = await this.client.from(this.table).upsert(toRow(artifact));
+      if (error) throw new Error(`Supabase artifact yazma hatası: ${error.message}`);
+    });
   }
 
   async listByWorkflow(workflowId: string): Promise<Artifact[]> {
-    const { data, error } = await this.client.from(this.table).select("*").eq("workflow_id", workflowId);
-    if (error) throw new Error(`Supabase artifact listeleme hatası: ${error.message}`);
-    return (data as ArtifactRow[]).map(toArtifact);
+    return withRetry(async () => {
+      const { data, error } = await this.client.from(this.table).select("*").eq("workflow_id", workflowId);
+      if (error) throw new Error(`Supabase artifact listeleme hatası: ${error.message}`);
+      return (data as ArtifactRow[]).map(toArtifact);
+    });
   }
 }
