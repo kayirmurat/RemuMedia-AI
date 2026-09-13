@@ -27,4 +27,9 @@ export class LocalStorageProvider implements StorageProvider {
   async readText(key: string): Promise<string> {
     return fs.readFile(this.resolvePath(key), "utf8");
   }
+
+  async ensureLocalFile(storedPath: string): Promise<string> {
+    // saveFile/writeText'in döndürdüğü yol zaten gerçek bir yerel dosya yolu.
+    return storedPath;
+  }
 }

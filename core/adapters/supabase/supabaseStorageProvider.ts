@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { StorageProvider } from "../../providers/storage.js";
 import { withRetry } from "../../util/retry.js";
@@ -48,6 +49,19 @@ export class SupabaseStorageProvider implements StorageProvider {
       const { data, error } = await this.client.storage.from(this.bucket).download(key);
       if (error) throw new Error(`Supabase storage okuma hatası (${key}): ${error.message}`);
       return data.text();
+    });
+  }
+
+  async ensureLocalFile(storedPath: string, destPath: string): Promise<string> {
+    const match = storedPath.match(/^supabase:\/\/[^/]+\/(.+)$/);
+    if (!match) return storedPath;
+    const key = match[1]!;
+    return withRetry(async () => {
+      const { data, error } = await this.client.storage.from(this.bucket).download(key);
+      if (error) throw new Error(`Supabase storage indirme hatası (${key}): ${error.message}`);
+      await fs.mkdir(path.dirname(destPath), { recursive: true });
+      await fs.writeFile(destPath, Buffer.from(await data.arrayBuffer()));
+      return destPath;
     });
   }
 }

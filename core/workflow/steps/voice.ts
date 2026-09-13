@@ -38,9 +38,11 @@ export function createVoiceStep(voice: VoiceProvider, storage: StorageProvider):
           metadata: { sceneNumber: scene.sceneNumber, durationSeconds: result.durationSeconds },
         });
         artifacts.push(artifact);
+        // result.filePath yerel/geçici bir dosyadır — context'e artifact'ın
+        // kalıcı storage yolu (artifact.path) yazılır (bkz. visualAssets.ts).
         voiceScenes.push({
           sceneNumber: scene.sceneNumber,
-          audioPath: result.filePath,
+          audioPath: artifact.path,
           durationSeconds: result.durationSeconds,
         });
       }

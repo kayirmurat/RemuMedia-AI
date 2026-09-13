@@ -124,8 +124,8 @@ async function main() {
     createVisualPlanStep(llm, storage),
     createVisualAssetsStep(image, storage),
     createVoiceStep(voice, storage),
-    createSubtitlesStep(storage, tempDir),
-    createAssemblyStep(renderer, storage, storageDir),
+    createSubtitlesStep(storage),
+    createAssemblyStep(renderer, storage, artifactRepo, storageDir, tempDir),
     createQcStep(renderer, storage),
   ];
 

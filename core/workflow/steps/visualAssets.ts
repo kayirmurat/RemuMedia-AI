@@ -37,7 +37,10 @@ export function createVisualAssetsStep(image: ImageProvider, storage: StoragePro
           metadata: { sceneNumber: scene.sceneNumber },
         });
         artifacts.push(artifact);
-        imageScenes.push({ sceneNumber: scene.sceneNumber, imagePath: result.filePath });
+        // result.filePath yerel/geçici bir dosyadır (workflow farklı bir
+        // makinede devam ederse artık mevcut olmayabilir) — bu yüzden
+        // context'e artifact'ın kalıcı storage yolu (artifact.path) yazılır.
+        imageScenes.push({ sceneNumber: scene.sceneNumber, imagePath: artifact.path });
       }
 
       return { artifacts, contextPatch: { imageScenes }, costUsd: totalCost, provider, model };
