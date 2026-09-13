@@ -28,7 +28,8 @@ npm run produce -- --topic "Konunu buraya yaz"
 ```
 
 Terminalde her adım ilerledikçe log görürsün (araştırma → brief → senaryo →
-sahne planı → görseller → seslendirme → altyazı → montaj → kalite kontrolü).
+sahne planı → içerik incelemesi → görseller → seslendirme → altyazı →
+montaj → kalite kontrolü).
 Sonunda toplam tahmini maliyet ve final video dosyasının yolu yazdırılır
 (örn. `storage/<workflow-id>-final.mp4`).
 

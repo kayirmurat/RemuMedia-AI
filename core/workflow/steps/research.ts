@@ -1,13 +1,15 @@
 import type { LLMProvider } from "../../providers/llm.js";
 import type { StorageProvider } from "../../providers/storage.js";
 import type { StepDefinition } from "../engine.js";
+import type { Logger } from "../../logger/logger.js";
 import { createTextArtifact } from "../../artifacts/artifactFactory.js";
 
 const SYSTEM_PROMPT =
   "Sen deneyimli bir içerik araştırmacısısın. Verilen konu hakkında kısa, doğru ve ilginç bilgiler " +
-  "topluyorsun. Uydurma bilgi verme; emin olmadığın noktaları belirt.";
+  "topluyorsun. Uydurma bilgi verme; emin olmadığın noktaları belirt. Bulduğun bilgiler gerçek web " +
+  "arama sonuçlarına dayanmalı, kendi ezberinden uydurma.";
 
-export function createResearchStep(llm: LLMProvider, storage: StorageProvider): StepDefinition {
+export function createResearchStep(llm: LLMProvider, storage: StorageProvider, logger?: Logger): StepDefinition {
   return {
     name: "research",
     async run({ workflowId, state }) {
@@ -19,7 +21,19 @@ export function createResearchStep(llm: LLMProvider, storage: StorageProvider): 
         "- Varsa yaygın bir yanlış bilinen nokta\n" +
         "Düz metin, madde işaretleriyle yaz.";
 
-      const result = await llm.generate(prompt, { system: SYSTEM_PROMPT, temperature: 0.6 });
+      let result;
+      if (llm.generateWithSearch) {
+        try {
+          result = await llm.generateWithSearch(prompt, { system: SYSTEM_PROMPT, temperature: 0.6 });
+        } catch (error) {
+          logger?.warn("Web aramalı araştırma başarısız oldu, normal moda düşülüyor", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+      if (!result) {
+        result = await llm.generate(prompt, { system: SYSTEM_PROMPT, temperature: 0.6 });
+      }
 
       const artifact = await createTextArtifact({
         storage,

@@ -14,4 +14,8 @@ export interface LLMResult {
 
 export interface LLMProvider {
   generate(prompt: string, options?: LLMGenerateOptions): Promise<LLMResult>;
+  // Destekleyen sağlayıcılarda gerçek web araması yaparak yanıt üretir
+  // (araştırma adımı için — halüsinasyon riskini azaltır). Opsiyonel:
+  // desteklemeyen bir sağlayıcı bunu hiç uygulamayabilir.
+  generateWithSearch?(prompt: string, options?: LLMGenerateOptions): Promise<LLMResult>;
 }

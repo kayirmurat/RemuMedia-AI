@@ -37,6 +37,7 @@ export const STEP_ORDER = [
   "brief",
   "script",
   "visualPlan",
+  "contentReview",
   "visualAssets",
   "voice",
   "subtitles",
@@ -50,7 +51,7 @@ export function workflowPhase(steps: Record<string, StepRecord>): WorkflowPhase 
   if (Object.values(steps).some((s) => s.status === "failed")) return "failed";
   if (steps.qc?.status === "completed") return "completed";
 
-  const reviewGate: (typeof STEP_ORDER)[number][] = ["research", "brief", "script", "visualPlan"];
+  const reviewGate: (typeof STEP_ORDER)[number][] = ["research", "brief", "script", "visualPlan", "contentReview"];
   const gatePassed = reviewGate.every((name) => steps[name]?.status === "completed");
   const pastGateStarted = steps.visualAssets && steps.visualAssets.status !== "pending";
   if (gatePassed && !pastGateStarted) return "review";

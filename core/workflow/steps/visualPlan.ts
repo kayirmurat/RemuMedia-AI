@@ -3,14 +3,10 @@ import type { StorageProvider } from "../../providers/storage.js";
 import type { StepDefinition } from "../engine.js";
 import type { Scene } from "../../domain/types.js";
 import { createTextArtifact } from "../../artifacts/artifactFactory.js";
+import { extractJson } from "../../text/extractJson.js";
 
 const SYSTEM_PROMPT =
   "Sen kısa videolar için görsel yönetmen olarak çalışıyorsun. Yalnızca istenen formatta yanıt verirsin.";
-
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  return (fenced ? fenced[1] : text)!.trim();
-}
 
 interface RawScene {
   narration: string;

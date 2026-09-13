@@ -105,8 +105,10 @@ kendi `package.json`/`tsconfig.json`'ı var; CLI'ın NodeNext modülleriyle
 çakışmasın diye bilinçli olarak ayrı bir alt proje. Vercel'de "Root
 Directory" = `dashboard` olarak deploy edilir):
 
-- **Konu → araştırma → senaryo → sahne planı hazır olunca üretim otomatik
-  durur** (`--stop-after visualPlan`). Dashboard bu noktada script'i ve
+- **Konu → araştırma → senaryo → sahne planı → içerik incelemesi hazır
+  olunca üretim otomatik durur** (`--stop-after contentReview`, Faz 4'te
+  eklenen içerik incelemesi adımını da kapsayacak şekilde güncellendi).
+  Dashboard bu noktada script'i ve
   sahne sahne görsel planını gösterir; kullanıcı ya **"Onayla ve Devam Et"**
   der (görsel/ses/montaj/qc çalışır — asıl maliyetli kısım) ya da bir geri
   bildirim yazıp **"Yeniden Yaz"** der (brief+senaryo+sahne planı sıfırlanıp
@@ -132,7 +134,39 @@ Kapsam dışı bırakılan (bilinçli): üretimi doğrudan bir web isteğinden
 çalıştırmak (Vercel süre limiti nedeniyle imkansız, bu yüzden GitHub
 Actions'a devredildi), gerçek kullanıcı hesapları/roller.
 
-## Sonraki adım (Faz 4 önizlemesi)
+## Faz 4 — tamamlananlar
 
-Kanıtlanmış workflow sorumluluklarını uzmanlaşmış ajanlara dönüştürmek
-(sadece uzmanlaşmanın ölçülebilir fayda sağladığı yerlerde).
+Doküman madde 15/16: "sadece uzmanlaşmanın ölçülebilir fayda sağladığı
+yerlerde ajanlaştır, hepsini birden yapma." İki somut boşluk hedeflendi —
+tüm ajanlar/süpervizör mimarisi değil:
+
+- **Araştırma adımı artık gerçek web araması yapıyor** (OpenAI Responses
+  API + `web_search_preview` aracı, `core/adapters/openai/openaiLLMProvider.ts`
+  → `generateWithSearch`). Öncesinde araştırma tamamen LLM'in ezberine
+  dayanıyordu — madde 10'un yasakladığı "halüsinasyon" riski buydu. Model
+  web aramasını desteklemezse (veya geçici bir hata olursa) otomatik olarak
+  normal (aramasız) moda düşer — üretim hiç durmaz.
+- **Yeni `contentReview` adımı** (`visualPlan`'dan sonra, görsel/ses
+  üretiminden ÖNCE — pahalı adımlardan önce sorunu yakalamak için): LLM
+  senaryoyu şu açılardan değerlendiriyor — hook işe yarıyor mu, tempo makul
+  mü, araştırmayla çelişen/uydurma bir iddia var mı, daha önce üretilmiş
+  başka bir konuyla neredeyse birebir aynı mı, açık bir telif/yasak içerik
+  sorunu var mı. Madde 10'un "Creative quality" ve "Content quality"
+  kategorilerini kapatıyor (Faz 1'de sadece "Technical quality" — süre/
+  çözünürlük/ses — yapılmıştı). Sadece 3-5. maddelerdeki CİDDİ sorunlarda
+  adımı başarısız kılıyor; zayıf ama kabul edilebilir hook/tempo için
+  sadece not düşüyor, workflow'u durdurmuyor — amaç öznel beğeni değil,
+  nesnel sorunları yakalamak.
+- Dashboard'daki inceleme durağı (`--stop-after`) artık `contentReview`'dan
+  sonrasına taşındı — kullanıcı script+sahne planıyla birlikte otomatik
+  kalite değerlendirmesini de görüyor. "Yeniden Yaz" artık `contentReview`'ı
+  da sıfırlayıp yeni senaryoyla tekrar çalıştırıyor.
+
+Kapsam dışı bırakılan (Faz 5'e ait): Süpervizör mimarisi, ajanlar arası
+mesajlaşma, diğer ajanlar (thumbnail/yayınlama/analitik — bu özellikler
+henüz hiç yok, önce üretilmeleri gerekiyor).
+
+## Sonraki adım (Faz 5 önizlemesi)
+
+Media CEO/Supervisor: uzmanlaşmış ajanları koordine eden, iş atayan,
+çıktıları değerlendiren, çakışmaları çözen bir üst katman.

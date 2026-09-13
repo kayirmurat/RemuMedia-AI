@@ -22,6 +22,7 @@ import { createResearchStep } from "../core/workflow/steps/research.js";
 import { createBriefStep } from "../core/workflow/steps/brief.js";
 import { createScriptStep } from "../core/workflow/steps/script.js";
 import { createVisualPlanStep } from "../core/workflow/steps/visualPlan.js";
+import { createContentReviewStep } from "../core/workflow/steps/contentReview.js";
 import { createVisualAssetsStep } from "../core/workflow/steps/visualAssets.js";
 import { createVoiceStep } from "../core/workflow/steps/voice.js";
 import { createSubtitlesStep } from "../core/workflow/steps/subtitles.js";
@@ -44,7 +45,7 @@ function parseArgs() {
 async function main() {
   const { topic, workflowId: existingId, maxCostUsd, stopAfter } = parseArgs();
   if (!topic && !existingId) {
-    console.error('Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5] [--stop-after visualPlan]');
+    console.error('Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5] [--stop-after contentReview]');
     console.error('          npm run produce -- --id <workflow-id>   (kaldığı yerden devam)');
     process.exit(1);
   }
@@ -118,10 +119,11 @@ async function main() {
   const engine = new WorkflowEngine(workflowRepo, artifactRepo, logger);
 
   let steps = [
-    createResearchStep(llm, storage),
+    createResearchStep(llm, storage, logger),
     createBriefStep(llm, storage),
     createScriptStep(llm, storage),
     createVisualPlanStep(llm, storage),
+    createContentReviewStep(llm, storage, registry),
     createVisualAssetsStep(image, storage),
     createVoiceStep(voice, storage),
     createSubtitlesStep(storage),

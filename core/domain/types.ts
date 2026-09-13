@@ -25,6 +25,7 @@ export type ArtifactType =
   | "brief"
   | "script"
   | "visual_plan"
+  | "content_review"
   | "image"
   | "voice"
   | "subtitles"

@@ -13,6 +13,7 @@ const STEP_LABEL: Record<string, string> = {
   brief: "Brief",
   script: "Senaryo",
   visualPlan: "Sahne planı",
+  contentReview: "İçerik incelemesi",
   visualAssets: "Görseller",
   voice: "Seslendirme",
   subtitles: "Altyazı",
@@ -23,6 +24,13 @@ const STEP_LABEL: Record<string, string> = {
 interface Scene {
   narration: string;
   imagePrompt: string;
+}
+
+interface ContentReview {
+  passed: boolean;
+  concerns: string[];
+  hookAssessment: string;
+  pacingAssessment: string;
 }
 
 export default async function WorkflowDetailPage({ params }: { params: { id: string } }) {
@@ -49,11 +57,13 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
   let scriptText = "";
   let briefText = "";
   let scenes: Scene[] = [];
+  let contentReview: ContentReview | null = null;
 
   if (phase === "review" || phase === "failed" || phase === "running") {
     const scriptArtifact = findLatest("script");
     const briefArtifact = findLatest("brief");
     const planArtifact = findLatest("visual_plan");
+    const reviewArtifact = findLatest("content_review");
     if (scriptArtifact) scriptText = await readArtifactText(scriptArtifact.path);
     if (briefArtifact) briefText = await readArtifactText(briefArtifact.path);
     if (planArtifact) {
@@ -61,6 +71,13 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
         scenes = JSON.parse(await readArtifactText(planArtifact.path));
       } catch {
         scenes = [];
+      }
+    }
+    if (reviewArtifact) {
+      try {
+        contentReview = JSON.parse(await readArtifactText(reviewArtifact.path));
+      } catch {
+        contentReview = null;
       }
     }
   }
@@ -135,6 +152,29 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
                   <div className="muted">Görsel: {s.imagePrompt}</div>
                 </div>
               ))}
+            </>
+          )}
+          {contentReview && (
+            <>
+              <p className="muted" style={{ marginBottom: 4, marginTop: 16 }}>
+                Otomatik içerik incelemesi{" "}
+                <span className={`badge badge-${contentReview.passed ? "completed" : "failed"}`}>
+                  {contentReview.passed ? "sorun yok" : "sorun bulundu"}
+                </span>
+              </p>
+              <p style={{ margin: "4px 0" }}>
+                <strong>Hook:</strong> {contentReview.hookAssessment}
+              </p>
+              <p style={{ margin: "4px 0" }}>
+                <strong>Tempo:</strong> {contentReview.pacingAssessment}
+              </p>
+              {contentReview.concerns.length > 0 && (
+                <ul style={{ margin: "4px 0" }}>
+                  {contentReview.concerns.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              )}
             </>
           )}
           <ReviewActions workflowId={workflow.id} />

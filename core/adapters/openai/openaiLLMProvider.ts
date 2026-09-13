@@ -7,6 +7,8 @@ import { createLogger, type Logger } from "../../logger/logger.js";
 // gerçek faturalandırma OpenAI panelinden takip edilmelidir.
 const PRICE_PER_1M_INPUT_USD = 0.15;
 const PRICE_PER_1M_OUTPUT_USD = 0.6;
+// web_search_preview aracının kendi sabit kullanım ücreti (token maliyetine ek) — TAHMİN.
+const WEB_SEARCH_CALL_COST_USD = 0.025;
 
 export class OpenAILLMProvider implements LLMProvider {
   private client: OpenAI;
@@ -50,6 +52,44 @@ export class OpenAILLMProvider implements LLMProvider {
 
     return {
       text,
+      provider: "openai",
+      model: this.model,
+      costUsd,
+      usage: { inputTokens, outputTokens },
+    };
+  }
+
+  // Responses API + built-in web_search_preview aracı: model gerçekten web'de
+  // arama yapıp bulduğu kaynaklara dayanarak yanıt üretir. Araştırma adımı
+  // için kullanılır — sadece ezber bilgiye (halüsinasyon riski) güvenmemek için.
+  async generateWithSearch(prompt: string, options: LLMGenerateOptions = {}): Promise<LLMResult> {
+    const response = await withRetry(
+      () =>
+        this.client.responses.create({
+          model: this.model,
+          instructions: options.system,
+          input: prompt,
+          tools: [{ type: "web_search_preview" }],
+        }),
+      {
+        onRetry: (attempt, error, delayMs) =>
+          this.logger.warn("OpenAI web araması geçici olarak başarısız oldu, tekrar deneniyor", {
+            attempt,
+            delayMs,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+      },
+    );
+
+    const inputTokens = response.usage?.input_tokens ?? 0;
+    const outputTokens = response.usage?.output_tokens ?? 0;
+    const costUsd =
+      (inputTokens / 1_000_000) * PRICE_PER_1M_INPUT_USD +
+      (outputTokens / 1_000_000) * PRICE_PER_1M_OUTPUT_USD +
+      WEB_SEARCH_CALL_COST_USD;
+
+    return {
+      text: response.output_text,
       provider: "openai",
       model: this.model,
       costUsd,

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       const topic = String(body.topic ?? "").trim();
       if (!topic) return NextResponse.json({ error: "Konu boş olamaz." }, { status: 400 });
 
-      await dispatchProduceWorkflow({ topic, stop_after: "visualPlan", max_cost: maxCost });
+      await dispatchProduceWorkflow({ topic, stop_after: "contentReview", max_cost: maxCost });
       return NextResponse.json({ ok: true });
     }
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       const workflow = data as WorkflowRow;
       const revisionNotes = [...((workflow.context.revisionNotes as string[] | undefined) ?? []), feedback];
 
-      for (const stepName of ["brief", "script", "visualPlan"]) {
+      for (const stepName of ["brief", "script", "visualPlan", "contentReview"]) {
         workflow.steps[stepName] = { status: "pending", artifactIds: [], cost: 0 };
       }
       workflow.context = { ...workflow.context, revisionNotes };
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       const { error: saveError } = await client.from("workflows").upsert(workflow);
       if (saveError) throw new Error(saveError.message);
 
-      await dispatchProduceWorkflow({ workflow_id: workflowId, stop_after: "visualPlan", max_cost: maxCost });
+      await dispatchProduceWorkflow({ workflow_id: workflowId, stop_after: "contentReview", max_cost: maxCost });
       return NextResponse.json({ ok: true });
     }
 
