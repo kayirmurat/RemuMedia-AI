@@ -58,6 +58,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
   let briefText = "";
   let scenes: Scene[] = [];
   let contentReview: ContentReview | null = null;
+  let sceneLengthCheck: { scriptChars: number; narrationChars: number } | null = null;
 
   if (phase === "review" || phase === "failed" || phase === "running") {
     const scriptArtifact = findLatest("script");
@@ -71,6 +72,10 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
         scenes = JSON.parse(await readArtifactText(planArtifact.path));
       } catch {
         scenes = [];
+      }
+      const { scriptChars, narrationChars } = planArtifact.metadata;
+      if (typeof scriptChars === "number" && typeof narrationChars === "number") {
+        sceneLengthCheck = { scriptChars, narrationChars };
       }
     }
     if (reviewArtifact) {
@@ -145,6 +150,21 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
             <>
               <p className="muted" style={{ marginBottom: 4 }}>
                 Sahne planı ({scenes.length} sahne)
+                {sceneLengthCheck && (
+                  <>
+                    {" "}
+                    — toplam anlatım metni: {sceneLengthCheck.narrationChars} karakter (senaryo:{" "}
+                    {sceneLengthCheck.scriptChars} karakter, fark: %
+                    {Math.abs(
+                      Math.round(
+                        ((sceneLengthCheck.narrationChars - sceneLengthCheck.scriptChars) /
+                          sceneLengthCheck.scriptChars) *
+                          100,
+                      ),
+                    )}
+                    ) — süre korunuyor
+                  </>
+                )}
               </p>
               {scenes.map((s, i) => (
                 <div key={i} style={{ marginBottom: 10 }}>

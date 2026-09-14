@@ -13,6 +13,17 @@ interface RawScene {
   imagePrompt: string;
 }
 
+function normalizeForComparison(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+// Sahneler senaryoyu "birebir" parçalara bölmeli — bu sadece prompt'ta
+// istenen bir kural, LLM buna tam uymayabilir (kelime ekleyip çıkarabilir).
+// Bu sessizce olursa video süresi istenmeden uzayıp kısalabilir, bu yüzden
+// toplam uzunluk senaryoyla karşılaştırılıp önemli bir sapma varsa adım
+// hata verir (kullanıcı tekrar deneyebilir) — sessizce geçmez.
+const NARRATION_LENGTH_TOLERANCE = 0.15;
+
 export function createVisualPlanStep(
   llm: LLMProvider,
   storage: StorageProvider,
@@ -59,6 +70,17 @@ export function createVisualPlanStep(
         );
       }
 
+      const scriptChars = normalizeForComparison(script).length;
+      const narrationChars = normalizeForComparison(scenes.map((s) => s.narration).join(" ")).length;
+      const lengthDiffRatio = Math.abs(narrationChars - scriptChars) / scriptChars;
+      if (lengthDiffRatio > NARRATION_LENGTH_TOLERANCE) {
+        throw new Error(
+          `Sahne planı senaryonun toplam uzunluğunu önemli ölçüde değiştirdi (senaryo: ${scriptChars} karakter, ` +
+            `sahnelerin toplamı: ${narrationChars} karakter) — bu video süresini istenmeden uzatıp kısaltabilir. ` +
+            "Lütfen aynı değişikliği tekrar dene.",
+        );
+      }
+
       const artifact = await createTextArtifact({
         storage,
         workflowId,
@@ -68,7 +90,7 @@ export function createVisualPlanStep(
         provider: result.provider,
         model: result.model,
         costUsd: result.costUsd,
-        metadata: { sceneCount: scenes.length },
+        metadata: { sceneCount: scenes.length, narrationChars, scriptChars },
       });
 
       return {
