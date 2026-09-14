@@ -27,7 +27,8 @@ const SUBTITLE_FONT_NAME = "Liberation Sans";
 const FPS = 30;
 // Sahneler arası crossfade süresi. Her sahne bu kadar fazladan render edilip
 // geçiş bu "fazlalığı" tükettiği için gerçek anlatım süresi asla kırpılmıyor.
-const TRANSITION_DURATION = 0.5;
+// 0.5s'den 0.7s'ye çıkarıldı — kısa geçişler sert/ani hissettiriyordu.
+const TRANSITION_DURATION = 0.7;
 // Ken Burns (yavaş yakınlaşma) için kaynak görsel bu oranda büyütülüyor,
 // zoompan sırasında piksel bozulması olmasın diye.
 const ZOOM_OVERSCAN = 1.3;
@@ -113,9 +114,12 @@ export class FfmpegRenderer implements Renderer {
 
     const subtitlesPart = escapeFilterValue(subtitlesPath);
     const fontsDirPart = escapeFilterValue(this.fontsDir);
+    // MarginV düşürüldü (90 -> 60) — altyazı alt kenara daha yakın, görüntünün
+    // ortasına taşmıyor. Metin artık subtitles.ts'de sahne başına tek büyük
+    // blok yerine küçük, akan parçalara bölündüğü için de kutu boyutu küçüldü.
     const forceStyle = escapeFilterValue(
       `FontName=${SUBTITLE_FONT_NAME},Bold=1,FontSize=15,PrimaryColour=&H00FFFFFF,` +
-        `OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=0,Alignment=2,MarginV=90`,
+        `OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=0,Alignment=2,MarginV=60`,
     );
 
     const filterComplex =

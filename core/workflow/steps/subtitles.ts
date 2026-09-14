@@ -14,6 +14,36 @@ function formatSrtTime(totalSeconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)},${pad(millis, 3)}`;
 }
 
+// Bir sahnenin anlatımını cümle bazında (uzun cümleleri kelime sınırından)
+// küçük parçalara böler. Tüm ses süresi boyunca tek bir büyük blok göstermek
+// yerine bu parçalar sahnenin gerçek konuşma süresine karakter oranına göre
+// dağıtılır — altyazı böylece konuşmayla akan bir metin gibi ilerler, ekranın
+// ortasını kaplayan tek bir kalabalık blok olarak durmaz.
+function splitIntoCaptionChunks(text: string, maxChars = 42): string[] {
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .flatMap((sentence) => {
+      if (sentence.length <= maxChars) return [sentence];
+      const words = sentence.split(/\s+/);
+      const chunks: string[] = [];
+      let current = "";
+      for (const word of words) {
+        const candidate = current ? `${current} ${word}` : word;
+        if (candidate.length > maxChars && current) {
+          chunks.push(current);
+          current = word;
+        } else {
+          current = candidate;
+        }
+      }
+      if (current) chunks.push(current);
+      return chunks;
+    })
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return sentences.length > 0 ? sentences : [text.trim()];
+}
+
 export function createSubtitlesStep(storage: StorageProvider): StepDefinition {
   return {
     name: "subtitles",
@@ -23,15 +53,23 @@ export function createSubtitlesStep(storage: StorageProvider): StepDefinition {
       const durationBySceneNumber = new Map(voiceScenes.map((v) => [v.sceneNumber, v.durationSeconds]));
 
       let cursor = 0;
+      let entryNumber = 0;
       const entries: string[] = [];
-      scenes.forEach((scene, index) => {
+      scenes.forEach((scene) => {
         const duration = durationBySceneNumber.get(scene.sceneNumber) ?? 0;
-        const start = cursor;
-        const end = cursor + duration;
-        cursor = end;
-        entries.push(
-          `${index + 1}\n${formatSrtTime(start)} --> ${formatSrtTime(end)}\n${wrapText(scene.narration)}\n`,
-        );
+        const chunks = splitIntoCaptionChunks(scene.narration);
+        const totalChars = chunks.reduce((sum, c) => sum + c.length, 0) || 1;
+
+        let sceneCursor = cursor;
+        for (const chunk of chunks) {
+          const chunkDuration = (chunk.length / totalChars) * duration;
+          const start = sceneCursor;
+          const end = sceneCursor + chunkDuration;
+          sceneCursor = end;
+          entryNumber += 1;
+          entries.push(`${entryNumber}\n${formatSrtTime(start)} --> ${formatSrtTime(end)}\n${wrapText(chunk)}\n`);
+        }
+        cursor += duration;
       });
 
       const srtContent = entries.join("\n");

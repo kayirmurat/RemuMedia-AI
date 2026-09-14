@@ -23,7 +23,9 @@ export class OpenAIVoiceProvider implements VoiceProvider {
     this.logger = logger;
   }
 
-  async synthesize(text: string, voice = "alloy"): Promise<VoiceResult> {
+  // "nova": OpenAI'nin daha doğal/canlı, feminen tonlu sesi — "alloy" (nötr)
+  // yerine varsayılan yapıldı, anlatım tonunu daha ilgi çekici kılıyor.
+  async synthesize(text: string, voice = "nova"): Promise<VoiceResult> {
     const buffer = await withRetry(
       async () => {
         const response = await this.client.audio.speech.create({

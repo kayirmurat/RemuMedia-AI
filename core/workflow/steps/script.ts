@@ -29,7 +29,10 @@ export function createScriptStep(
         "Kurallar:\n" +
         "- SADECE seslendirilecek metni yaz. Sahne numarası, yönerge, parantez içi not YAZMA.\n" +
         "- Akıcı, konuşma diline yakın, kısa cümleler kullan.\n" +
-        "- Brief'teki hook ile başla, ana fikirle bitir." +
+        "- Brief'teki hook ile başla — ilk cümle jenerik/klişe olmasın, doğrudan çarpıcı/merak uyandırıcı " +
+        "bilgiyle açılsın, izleyiciyi ilk 3 saniyede durdurmalı.\n" +
+        "- Sahneler arasında merak/gerilim koru (bir sonraki cümleyi merak ettirecek şekilde ilerle), " +
+        "ana fikirle bitir." +
         (latestFeedback
           ? `\n\nÖNEMLİ — kullanıcı önceki taslak için şu geri bildirimi verdi, bunu mutlaka dikkate al:\n"${latestFeedback}"`
           : "");

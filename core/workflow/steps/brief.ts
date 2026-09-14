@@ -17,7 +17,10 @@ export function createBriefStep(llm: LLMProvider, storage: StorageProvider): Ste
       const prompt =
         `Konu: "${state.topic}"\n\nAraştırma notları:\n${research}\n\n` +
         "Bu araştırmadan 45-90 saniyelik kısa bir video için içerik brief'i hazırla:\n" +
-        "- Hook: ilk 3 saniyede izleyiciyi durduracak açılış cümlesi\n" +
+        "- Hook: ilk 3 saniyede izleyiciyi durduracak açılış cümlesi. Şu tekniklerden birini kullan: " +
+        "şaşırtıcı/az bilinen somut bir gerçek, merak uyandıran açık uçlu bir soru, ya da cesur/çelişkili " +
+        "bir iddia. \"Bugün size ... hakkında bahsedeceğim\" veya \"... biliyor muydunuz\" gibi klişe, " +
+        "jenerik girişlerden KESİNLİKLE kaçın — doğrudan çarpıcı bilgiyle aç.\n" +
         "- Ana açı: bu video neden farklı/değerli\n" +
         "- Hedef kitle\n" +
         "- Video sonunda izleyicide kalacak tek bir ana fikir\n" +
