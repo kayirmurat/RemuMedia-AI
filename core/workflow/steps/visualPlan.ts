@@ -28,6 +28,12 @@ export function createVisualPlanStep(
         `Bu senaryoyu ${sceneCountText} böl. Her sahne için:\n` +
         '- "narration": o sahnede seslendirilecek metnin senaryodan BİREBİR alınan parçası (tüm parçalar birleşince senaryonun tamamını oluşturmalı)\n' +
         '- "imagePrompt": bu sahneyi görselleştirecek, İngilizce, detaylı bir görsel üretim promptu (temiz, fotogerçekçi veya editoryal illüstrasyon stili; görselde YAZI/METİN olmasın)\n\n' +
+        "Bölme kuralları:\n" +
+        "- Sahneleri mümkün olduğunca DENGELİ uzunlukta böl — en uzun sahnenin narration'ı en kısa sahnenin " +
+        "2 katından uzun olmasın. Tek bir sahne birden fazla cümleyi/fikri yutup senaryonun büyük bir kısmını " +
+        "üstlenmesin.\n" +
+        "- İlk sahne SADECE açılış/hook cümlesini içersin — hook'u bir sonraki cümleyle birleştirip " +
+        "uzatma.\n\n" +
         "SADECE geçerli bir JSON dizisi döndür, başka hiçbir açıklama yazma:\n" +
         '[{"narration": "...", "imagePrompt": "..."}]';
 
