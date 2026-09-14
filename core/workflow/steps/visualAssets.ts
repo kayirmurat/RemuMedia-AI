@@ -21,7 +21,16 @@ export function createVisualAssetsStep(image: ImageProvider, storage: StoragePro
       let model: string | undefined;
 
       for (const scene of scenes) {
-        const result = await image.generate(scene.imagePrompt, { size: "1024x1536" });
+        let result;
+        try {
+          result = await image.generate(scene.imagePrompt, { size: "1024x1536" });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          throw new Error(
+            `Sahne ${scene.sceneNumber} için görsel üretilemedi: ${message}\n` +
+              `Görsel promptu: "${scene.imagePrompt}"`,
+          );
+        }
         totalCost += result.costUsd;
         provider = result.provider;
         model = result.model;
