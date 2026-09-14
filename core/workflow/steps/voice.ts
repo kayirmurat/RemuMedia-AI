@@ -15,6 +15,7 @@ export function createVoiceStep(voice: VoiceProvider, storage: StorageProvider):
     name: "voice",
     async run({ workflowId, state }) {
       const scenes = state.context.scenes as Scene[];
+      const voiceName = state.context.voiceName as string | undefined;
       const voiceScenes: VoiceScene[] = [];
       const artifacts = [];
       let totalCost = 0;
@@ -22,7 +23,7 @@ export function createVoiceStep(voice: VoiceProvider, storage: StorageProvider):
       let model: string | undefined;
 
       for (const scene of scenes) {
-        const result = await voice.synthesize(scene.narration);
+        const result = await voice.synthesize(scene.narration, voiceName);
         totalCost += result.costUsd;
         provider = result.provider;
         model = result.model;

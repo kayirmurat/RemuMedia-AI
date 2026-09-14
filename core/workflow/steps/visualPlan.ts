@@ -22,6 +22,8 @@ export function createVisualPlanStep(
     name: "visualPlan",
     async run({ workflowId, state }) {
       const script = state.context.script as string;
+      const revisionNotes = state.context.revisionNotes as string[] | undefined;
+      const latestFeedback = revisionNotes?.at(-1);
       const sceneCountText = sceneCount ? `TAM OLARAK ${sceneCount} sahneye` : "6-9 sahneye";
       const prompt =
         `Anlatım senaryosu:\n${script}\n\n` +
@@ -35,7 +37,10 @@ export function createVisualPlanStep(
         "- İlk sahne SADECE açılış/hook cümlesini içersin — hook'u bir sonraki cümleyle birleştirip " +
         "uzatma.\n\n" +
         "SADECE geçerli bir JSON dizisi döndür, başka hiçbir açıklama yazma:\n" +
-        '[{"narration": "...", "imagePrompt": "..."}]';
+        '[{"narration": "...", "imagePrompt": "..."}]' +
+        (latestFeedback
+          ? `\n\nÖNEMLİ — kullanıcı sahne planı için şu geri bildirimi verdi, bunu mutlaka dikkate al:\n"${latestFeedback}"`
+          : "");
 
       const result = await llm.generate(prompt, { system: SYSTEM_PROMPT, temperature: 0.6 });
 

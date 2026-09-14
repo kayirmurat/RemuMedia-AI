@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabase";
 import { dispatchProduceWorkflow } from "../../../lib/github";
-import type { WorkflowRow } from "../../../lib/types";
+import { STEP_ORDER, type StepRecord, type WorkflowRow } from "../../../lib/types";
+
+// Hangi "kapsam" (scope) seçilirse, workflow adımlarından HANGİSİNDEN İTİBAREN
+// her şeyin sıfırlanıp yeniden üretileceğini belirler. Öncesindeki tamamlanmış
+// adımlar (ve maliyetleri) korunur — WorkflowEngine zaten "completed" durumundaki
+// adımları atlıyor (bkz. core/workflow/engine.ts).
+const SCOPE_RESET_FROM: Record<string, (typeof STEP_ORDER)[number]> = {
+  script: "brief", // Senaryo/Metin (hook dahil) — brief'ten itibaren her şey
+  scenes: "visualPlan", // Sahne planı/Kurgu — senaryo metni AYNEN kalır
+  voice: "voice", // Seslendirme — sahneler/görseller AYNEN kalır
+  subtitles: "subtitles", // Altyazı — ses/görseller AYNEN kalır
+  render: "assembly", // Sadece montaj/geçişleri güncel kodla yeniden render et
+};
+
+// Senaryo/sahne değişikliği görsel+ses üretimine (maliyetli kısım) geçmeden
+// önce kullanıcının onayına sunulmalı. Ses/altyazı/montaj değişiklikleri
+// senaryoyu/sahneleri etkilemediği için doğrudan sonuna kadar çalışabilir.
+const SCOPES_NEEDING_REVIEW_GATE = new Set(["script", "scenes"]);
+const SCOPES_NEEDING_FEEDBACK = new Set(["script", "scenes"]);
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -27,9 +45,16 @@ export async function POST(req: NextRequest) {
 
     if (mode === "revise") {
       const workflowId = String(body.workflowId ?? "");
+      const scope = String(body.scope ?? "script");
       const feedback = String(body.feedback ?? "").trim();
-      if (!workflowId || !feedback) {
-        return NextResponse.json({ error: "workflowId ve feedback gerekli." }, { status: 400 });
+      const voiceName = body.voiceName ? String(body.voiceName) : undefined;
+      const fromStep = SCOPE_RESET_FROM[scope];
+
+      if (!workflowId || !fromStep) {
+        return NextResponse.json({ error: "workflowId ve geçerli bir scope gerekli." }, { status: 400 });
+      }
+      if (SCOPES_NEEDING_FEEDBACK.has(scope) && !feedback) {
+        return NextResponse.json({ error: "Bu değişiklik için geri bildirim gerekli." }, { status: 400 });
       }
 
       const client = supabaseServer();
@@ -42,18 +67,29 @@ export async function POST(req: NextRequest) {
       if (!data) return NextResponse.json({ error: "Workflow bulunamadı." }, { status: 404 });
 
       const workflow = data as WorkflowRow;
-      const revisionNotes = [...((workflow.context.revisionNotes as string[] | undefined) ?? []), feedback];
 
-      for (const stepName of ["brief", "script", "visualPlan", "contentReview"]) {
-        workflow.steps[stepName] = { status: "pending", artifactIds: [], cost: 0 };
+      const fromIndex = STEP_ORDER.indexOf(fromStep);
+      for (const stepName of STEP_ORDER.slice(fromIndex)) {
+        workflow.steps[stepName] = { status: "pending", artifactIds: [], cost: 0 } as StepRecord;
       }
-      workflow.context = { ...workflow.context, revisionNotes };
+
+      if (feedback) {
+        const revisionNotes = [...((workflow.context.revisionNotes as string[] | undefined) ?? []), feedback];
+        workflow.context = { ...workflow.context, revisionNotes };
+      }
+      if (voiceName) {
+        workflow.context = { ...workflow.context, voiceName };
+      }
       workflow.updated_at = new Date().toISOString();
 
       const { error: saveError } = await client.from("workflows").upsert(workflow);
       if (saveError) throw new Error(saveError.message);
 
-      await dispatchProduceWorkflow({ workflow_id: workflowId, stop_after: "contentReview", max_cost: maxCost });
+      await dispatchProduceWorkflow({
+        workflow_id: workflowId,
+        max_cost: maxCost,
+        ...(SCOPES_NEEDING_REVIEW_GATE.has(scope) ? { stop_after: "contentReview" } : {}),
+      });
       return NextResponse.json({ ok: true });
     }
 

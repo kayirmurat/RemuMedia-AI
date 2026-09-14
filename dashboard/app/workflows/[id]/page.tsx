@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseConfigError, supabaseServer } from "../../../lib/supabase";
 import { readArtifactText } from "../../../lib/content";
 import { workflowPhase, totalCost, STEP_ORDER, type WorkflowRow, type ArtifactRow } from "../../../lib/types";
-import ReviewActions from "./ReviewActions";
+import ReviseForm from "./ReviseForm";
 import ApproveButton from "./ApproveButton";
 import ArtifactPreview from "./ArtifactPreview";
 
@@ -177,7 +177,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
               )}
             </>
           )}
-          <ReviewActions workflowId={workflow.id} />
+          <ReviseForm workflowId={workflow.id} scopes={["script", "scenes"]} showContinue />
         </div>
       )}
 
@@ -200,6 +200,8 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
               approved={Boolean(finalVideoArtifact.metadata.approved)}
             />
           </div>
+          <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+          <ReviseForm workflowId={workflow.id} scopes={["script", "scenes", "voice", "subtitles", "render"]} />
         </div>
       )}
 
