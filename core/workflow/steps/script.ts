@@ -15,6 +15,29 @@ export function createScriptStep(
   return {
     name: "script",
     async run({ workflowId, state }) {
+      // Kullanıcı dashboard'da metni doğrudan kendisi düzenleyip kaydetmiş
+      // olabilir — bu durumda LLM'e hiç gitmeden (maliyet $0) onu aynen kullan.
+      const manualOverride = state.context.scriptOverride as string | undefined;
+      if (manualOverride && manualOverride.trim()) {
+        const script = manualOverride.trim();
+        const artifact = await createTextArtifact({
+          storage,
+          workflowId,
+          type: "script",
+          content: script,
+          provider: "manual",
+          model: "manual",
+          costUsd: 0,
+        });
+        return {
+          artifacts: [artifact],
+          contextPatch: { script, scriptOverride: undefined },
+          costUsd: 0,
+          provider: "manual",
+          model: "manual",
+        };
+      }
+
       const research = state.context.research as string;
       const brief = state.context.brief as string;
       const revisionNotes = state.context.revisionNotes as string[] | undefined;

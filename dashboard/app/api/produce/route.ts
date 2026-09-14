@@ -8,7 +8,8 @@ import { STEP_ORDER, type StepRecord, type WorkflowRow } from "../../../lib/type
 // adımlar (ve maliyetleri) korunur — WorkflowEngine zaten "completed" durumundaki
 // adımları atlıyor (bkz. core/workflow/engine.ts).
 const SCOPE_RESET_FROM: Record<string, (typeof STEP_ORDER)[number]> = {
-  script: "brief", // Senaryo/Metin (hook dahil) — brief'ten itibaren her şey
+  script: "brief", // Senaryo/Metin (hook dahil) — brief'ten itibaren her şey, LLM yeniden yazar
+  scriptManual: "script", // Kullanıcının kendi düzenlediği metin — brief AYNEN kalır, LLM'e gitmez
   scenes: "visualPlan", // Sahne planı/Kurgu — senaryo metni AYNEN kalır
   voice: "voice", // Seslendirme — sahneler/görseller AYNEN kalır
   subtitles: "subtitles", // Altyazı — ses/görseller AYNEN kalır
@@ -18,7 +19,7 @@ const SCOPE_RESET_FROM: Record<string, (typeof STEP_ORDER)[number]> = {
 // Senaryo/sahne değişikliği görsel+ses üretimine (maliyetli kısım) geçmeden
 // önce kullanıcının onayına sunulmalı. Ses/altyazı/montaj değişiklikleri
 // senaryoyu/sahneleri etkilemediği için doğrudan sonuna kadar çalışabilir.
-const SCOPES_NEEDING_REVIEW_GATE = new Set(["script", "scenes"]);
+const SCOPES_NEEDING_REVIEW_GATE = new Set(["script", "scriptManual", "scenes"]);
 const SCOPES_NEEDING_FEEDBACK = new Set(["script", "scenes"]);
 
 export async function POST(req: NextRequest) {
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
       const scope = String(body.scope ?? "script");
       const feedback = String(body.feedback ?? "").trim();
       const voiceName = body.voiceName ? String(body.voiceName) : undefined;
+      const manualScript = scope === "scriptManual" ? String(body.script ?? "").trim() : undefined;
       const fromStep = SCOPE_RESET_FROM[scope];
 
       if (!workflowId || !fromStep) {
@@ -55,6 +57,9 @@ export async function POST(req: NextRequest) {
       }
       if (SCOPES_NEEDING_FEEDBACK.has(scope) && !feedback) {
         return NextResponse.json({ error: "Bu değişiklik için geri bildirim gerekli." }, { status: 400 });
+      }
+      if (scope === "scriptManual" && !manualScript) {
+        return NextResponse.json({ error: "Senaryo metni boş olamaz." }, { status: 400 });
       }
 
       const client = supabaseServer();
@@ -79,6 +84,9 @@ export async function POST(req: NextRequest) {
       }
       if (voiceName) {
         workflow.context = { ...workflow.context, voiceName };
+      }
+      if (manualScript) {
+        workflow.context = { ...workflow.context, scriptOverride: manualScript };
       }
       workflow.updated_at = new Date().toISOString();
 

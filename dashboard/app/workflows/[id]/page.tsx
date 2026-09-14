@@ -5,6 +5,7 @@ import { workflowPhase, totalCost, STEP_ORDER, type WorkflowRow, type ArtifactRo
 import ReviseForm from "./ReviseForm";
 import ApproveButton from "./ApproveButton";
 import ArtifactPreview from "./ArtifactPreview";
+import ScriptEditor from "./ScriptEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
   let contentReview: ContentReview | null = null;
   let sceneLengthCheck: { scriptChars: number; narrationChars: number } | null = null;
 
-  if (phase === "review" || phase === "failed" || phase === "running") {
+  if (phase === "review" || phase === "failed" || phase === "running" || phase === "completed") {
     const scriptArtifact = findLatest("script");
     const briefArtifact = findLatest("brief");
     const planArtifact = findLatest("visual_plan");
@@ -142,10 +143,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
               <pre>{briefText}</pre>
             </>
           )}
-          <p className="muted" style={{ marginBottom: 4 }}>
-            Senaryo
-          </p>
-          <pre>{scriptText}</pre>
+          <ScriptEditor workflowId={workflow.id} initialScript={scriptText} />
           {scenes.length > 0 && (
             <>
               <p className="muted" style={{ marginBottom: 4 }}>
@@ -220,6 +218,8 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
               approved={Boolean(finalVideoArtifact.metadata.approved)}
             />
           </div>
+          <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+          <ScriptEditor workflowId={workflow.id} initialScript={scriptText} />
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <ReviseForm workflowId={workflow.id} scopes={["script", "scenes", "voice", "subtitles", "render"]} />
         </div>
