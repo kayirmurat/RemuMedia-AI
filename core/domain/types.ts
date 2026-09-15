@@ -30,6 +30,7 @@ export type ArtifactType =
   | "voice"
   | "subtitles"
   | "final_video"
+  | "thumbnail"
   | "qc_report";
 
 export interface Artifact {

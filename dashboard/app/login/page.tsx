@@ -5,11 +5,9 @@ export default function LoginPage({
 }) {
   const next = searchParams.next ?? "/";
   return (
-    <div className="card" style={{ maxWidth: 360, margin: "80px auto" }}>
-      <h1 style={{ fontSize: 18, marginTop: 0 }}>RemuMedia AI</h1>
-      {searchParams.error && (
-        <p style={{ color: "var(--danger)", fontSize: 14 }}>Şifre yanlış.</p>
-      )}
+    <div className="card mx-auto mt-24 max-w-[360px]">
+      <h1 className="mt-0 text-lg font-bold text-ink">RemuMedia AI</h1>
+      {searchParams.error && <p className="text-sm text-danger">Şifre yanlış.</p>}
       <form method="POST" action="/api/auth/login">
         <input type="hidden" name="next" value={next} />
         <label className="muted" htmlFor="password">

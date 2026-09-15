@@ -51,6 +51,22 @@ export class FfmpegRenderer implements Renderer {
     return probeMedia(filePath);
   }
 
+  async extractThumbnail(videoPath: string, outputPath: string, atSeconds = 1): Promise<void> {
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    await execFileAsync(this.ffmpegBinary, [
+      "-y",
+      "-ss",
+      String(atSeconds),
+      "-i",
+      videoPath,
+      "-frames:v",
+      "1",
+      "-q:v",
+      "3",
+      outputPath,
+    ]);
+  }
+
   async assemble(params: {
     scenes: RenderScene[];
     subtitlesPath: string;

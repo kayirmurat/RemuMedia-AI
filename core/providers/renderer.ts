@@ -32,4 +32,5 @@ export interface Renderer {
     aspectRatio: AspectRatio;
   }): Promise<RenderResult>;
   probe(filePath: string): Promise<MediaProbe>;
+  extractThumbnail(videoPath: string, outputPath: string, atSeconds?: number): Promise<void>;
 }

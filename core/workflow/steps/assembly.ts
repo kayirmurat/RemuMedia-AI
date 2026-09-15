@@ -95,7 +95,21 @@ export function createAssemblyStep(
         metadata: { aspectRatio, sceneCount: renderScenes.length },
       });
 
-      return { artifacts: [artifact], contextPatch: { finalVideoPath: filePath }, costUsd: 0 };
+      const thumbnailPath = path.join(tempDir, `${newId()}.jpg`);
+      await renderer.extractThumbnail(filePath, thumbnailPath);
+      const thumbnailArtifact = await createFileArtifact({
+        storage,
+        workflowId,
+        type: "thumbnail",
+        localFilePath: thumbnailPath,
+        costUsd: 0,
+      });
+
+      return {
+        artifacts: [artifact, thumbnailArtifact],
+        contextPatch: { finalVideoPath: filePath },
+        costUsd: 0,
+      };
     },
   };
 }
