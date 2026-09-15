@@ -23,6 +23,7 @@ import { createBriefStep } from "../core/workflow/steps/brief.js";
 import { createScriptStep } from "../core/workflow/steps/script.js";
 import { createVisualPlanStep } from "../core/workflow/steps/visualPlan.js";
 import { createContentReviewStep } from "../core/workflow/steps/contentReview.js";
+import { createMusicSelectionStep } from "../core/workflow/steps/musicSelection.js";
 import { createVisualAssetsStep } from "../core/workflow/steps/visualAssets.js";
 import { createVoiceStep } from "../core/workflow/steps/voice.js";
 import { createSubtitlesStep } from "../core/workflow/steps/subtitles.js";
@@ -79,6 +80,7 @@ async function main() {
   const storageDir = path.join(rootDir, "storage");
   const tempDir = path.join(storageDir, "tmp");
   const fontFile = path.join(rootDir, "assets", "fonts", "LiberationSans-Bold.ttf");
+  const musicManifestPath = path.join(rootDir, "assets", "music", "manifest.json");
 
   const logger = createLogger();
 
@@ -138,6 +140,7 @@ async function main() {
     createScriptStep(llm, storage, sceneCount ? sceneCount * 4 : undefined),
     createVisualPlanStep(llm, storage, sceneCount),
     createContentReviewStep(llm, storage, registry),
+    createMusicSelectionStep(llm, storage, musicManifestPath),
     createVisualAssetsStep(image, storage),
     createVoiceStep(voice, storage),
     createSubtitlesStep(storage),

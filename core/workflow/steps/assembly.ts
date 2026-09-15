@@ -78,12 +78,14 @@ export function createAssemblyStep(
         subtitlesArtifact.path,
         path.join(tempDir, `${newId()}.srt`),
       );
+      const musicPath = (state.context.musicPath as string | null | undefined) ?? null;
       const outputPath = path.join(workDir, `${workflowId}-final.mp4`);
       const { filePath } = await renderer.assemble({
         scenes: renderScenes,
         subtitlesPath,
         outputPath,
         aspectRatio,
+        musicPath,
       });
 
       const artifact = await createFileArtifact({
@@ -92,7 +94,11 @@ export function createAssemblyStep(
         type: "final_video",
         localFilePath: filePath,
         costUsd: 0,
-        metadata: { aspectRatio, sceneCount: renderScenes.length },
+        metadata: {
+          aspectRatio,
+          sceneCount: renderScenes.length,
+          musicTrackId: state.context.musicTrackId ?? null,
+        },
       });
 
       const thumbnailPath = path.join(tempDir, `${newId()}.jpg`);

@@ -38,6 +38,7 @@ export const STEP_ORDER = [
   "script",
   "visualPlan",
   "contentReview",
+  "musicSelection",
   "visualAssets",
   "voice",
   "subtitles",

@@ -30,6 +30,7 @@ export interface Renderer {
     subtitlesPath: string;
     outputPath: string;
     aspectRatio: AspectRatio;
+    musicPath?: string | null;
   }): Promise<RenderResult>;
   probe(filePath: string): Promise<MediaProbe>;
   extractThumbnail(videoPath: string, outputPath: string, atSeconds?: number): Promise<void>;

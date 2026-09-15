@@ -15,6 +15,7 @@ const STEP_LABEL: Record<string, string> = {
   script: "Senaryo",
   visualPlan: "Sahne planı",
   contentReview: "İçerik incelemesi",
+  musicSelection: "Müzik seçimi",
   visualAssets: "Görseller",
   voice: "Seslendirme",
   subtitles: "Altyazı",
@@ -221,7 +222,10 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <ScriptEditor workflowId={workflow.id} initialScript={scriptText} />
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
-          <ReviseForm workflowId={workflow.id} scopes={["script", "scenes", "voice", "subtitles", "render"]} />
+          <ReviseForm
+            workflowId={workflow.id}
+            scopes={["script", "scenes", "music", "voice", "subtitles", "render"]}
+          />
         </div>
       )}
 

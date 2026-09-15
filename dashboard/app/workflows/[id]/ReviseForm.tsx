@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 const SCOPE_LABELS: Record<string, string> = {
   script: "Senaryo / Metin (hook dahil)",
   scenes: "Sahne planı / Kurgu (sahne sayısı, görsel dağılımı)",
+  music: "Arka plan müziği",
   voice: "Seslendirme",
   subtitles: "Altyazı",
   render: "Sadece montajı yenile (geçiş/efekt kod güncellemelerini uygular)",

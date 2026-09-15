@@ -31,7 +31,16 @@ export type ArtifactType =
   | "subtitles"
   | "final_video"
   | "thumbnail"
+  | "music_selection"
   | "qc_report";
+
+export interface MusicTrack {
+  id: string;
+  filename: string;
+  moods: string[];
+  license: string;
+  source?: string;
+}
 
 export interface Artifact {
   id: string;

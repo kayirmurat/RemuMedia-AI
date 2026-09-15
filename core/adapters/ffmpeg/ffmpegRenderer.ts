@@ -34,6 +34,9 @@ const TRANSITION_DURATION = 0.7;
 const ZOOM_OVERSCAN = 1.3;
 const ZOOM_STEP_PER_FRAME = 0.001;
 const ZOOM_MAX = 1.15;
+// Arka plan müziği seslendirmenin altında, dikkat dağıtmayacak seviyede
+// çalsın diye düşük tutuluyor.
+const MUSIC_VOLUME = 0.15;
 
 export class FfmpegRenderer implements Renderer {
   private ffmpegBinary: string;
@@ -72,8 +75,9 @@ export class FfmpegRenderer implements Renderer {
     subtitlesPath: string;
     outputPath: string;
     aspectRatio: AspectRatio;
+    musicPath?: string | null;
   }): Promise<RenderResult> {
-    const { scenes, subtitlesPath, outputPath, aspectRatio } = params;
+    const { scenes, subtitlesPath, outputPath, aspectRatio, musicPath } = params;
     if (scenes.length === 0) {
       throw new Error("Sahne listesi boş, video birleştirilemez");
     }
@@ -101,6 +105,13 @@ export class FfmpegRenderer implements Renderer {
     });
     for (const scene of scenes) {
       args.push("-i", scene.audioPath);
+    }
+    const musicInputIndex = scenes.length * 2;
+    if (musicPath) {
+      // -stream_loop -1: müzik videodan kısaysa sonsuz döngüye alınır;
+      // aşağıdaki amix'teki duration=first sesi tam olarak seslendirme
+      // uzunluğuna kırpar, bu yüzden döngü asla "taşmaz".
+      args.push("-stream_loop", "-1", "-i", musicPath);
     }
 
     const videoChains = scenes.map(
@@ -138,10 +149,17 @@ export class FfmpegRenderer implements Renderer {
         `OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=0,Alignment=2,MarginV=60`,
     );
 
-    const filterComplex =
+    const voiceLabel = musicPath ? "avoice" : "aout";
+    let filterComplex =
       [...videoChains, ...xfadeParts].join(";") +
       `;[${videoTail}]subtitles='${subtitlesPart}':fontsdir='${fontsDirPart}':force_style='${forceStyle}'[vout]` +
-      `;${audioConcatInputs}concat=n=${scenes.length}:v=0:a=1[aout]`;
+      `;${audioConcatInputs}concat=n=${scenes.length}:v=0:a=1[${voiceLabel}]`;
+
+    if (musicPath) {
+      filterComplex +=
+        `;[${musicInputIndex}:a]volume=${MUSIC_VOLUME}[amusic]` +
+        `;[avoice][amusic]amix=inputs=2:duration=first:dropout_transition=0[aout]`;
+    }
 
     args.push(
       "-filter_complex",

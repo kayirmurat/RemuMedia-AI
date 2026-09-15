@@ -11,6 +11,7 @@ const SCOPE_RESET_FROM: Record<string, (typeof STEP_ORDER)[number]> = {
   script: "brief", // Senaryo/Metin (hook dahil) — brief'ten itibaren her şey, LLM yeniden yazar
   scriptManual: "script", // Kullanıcının kendi düzenlediği metin — brief AYNEN kalır, LLM'e gitmez
   scenes: "visualPlan", // Sahne planı/Kurgu — senaryo metni AYNEN kalır
+  music: "musicSelection", // Arka plan müziği — sahneler/görseller/ses AYNEN kalır
   voice: "voice", // Seslendirme — sahneler/görseller AYNEN kalır
   subtitles: "subtitles", // Altyazı — ses/görseller AYNEN kalır
   render: "assembly", // Sadece montaj/geçişleri güncel kodla yeniden render et
