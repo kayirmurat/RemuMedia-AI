@@ -150,6 +150,82 @@ Bu URL'i açtığında (şifre koyduysan önce login ekranı) konu üretimlerini
 görebilir, yeni video başlatabilir, senaryo+sahne planını inceleyip
 onaylayabilir/geri bildirimle yeniden yazdırabilirsin.
 
+## Platform bağlama ve yayınlama (Faz 7)
+
+Bitmiş bir videoyu dashboard'dan doğrudan YouTube/Instagram/TikTok'a
+yayınlayabilmek için önce her platformda bir "geliştirici uygulaması"
+oluşturup Vercel'e birkaç env değişkeni eklemen gerekiyor. Bu tek
+seferlik bir kurulum.
+
+### 0. Veritabanını güncelle
+
+[`supabase/schema.sql`](./supabase/schema.sql) dosyasının GÜNCEL içeriğini
+kopyala, Supabase Dashboard → **SQL Editor**'e yapıştır, **Run**'a bas.
+(`platform_connections` ve `publications` tablolarını ekler, mevcut
+tablolara dokunmaz.)
+
+### 1. YouTube
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → üstten
+   **Yeni Proje** oluştur (ör. "RemuMedia").
+2. Sol menü → **APIs & Services → Library** → "YouTube Data API v3" ara →
+   **Enable**.
+3. Sol menü → **APIs & Services → OAuth consent screen** → **User Type:
+   External** → oluştur. Uygulama adı: "RemuMedia AI", kendi e-postanı gir.
+   **Test users** adımında kendi Google hesabını ekle (bu sayede Google'ın
+   haftalar süren onay sürecini beklemeden hemen kullanabilirsin).
+4. Sol menü → **APIs & Services → Credentials** → **Create Credentials →
+   OAuth client ID** → Application type: **Web application**.
+   **Authorized redirect URIs**'a şunu ekle:
+   `https://<vercel-domain-adresin>/api/auth/youtube/callback`
+5. Oluşturulan **Client ID** ve **Client Secret**'ı kopyala.
+6. Vercel projenin **Settings → Environment Variables**'a ekle:
+   `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+
+### 2. Instagram
+
+1. [developers.facebook.com](https://developers.facebook.com) → **My Apps
+   → Create App** → tür: **Business**.
+2. Uygulama panelinde **Add Product** → **Instagram Graph API** ve
+   **Facebook Login** ürünlerini ekle.
+3. **Facebook Login → Settings**'te **Valid OAuth Redirect URIs**'a şunu
+   ekle: `https://<vercel-domain-adresin>/api/auth/instagram/callback`
+4. **App roles → Roles**'ten kendini (ve test edecek kişileri) ekle —
+   Meta'nın haftalar süren app review'ünü beklemeden test edebilirsin.
+5. Instagram hesabının **Business veya Creator** türünde olduğundan ve bir
+   **Facebook Sayfası'na bağlı** olduğundan emin ol (Instagram uygulaması
+   → Ayarlar → Hesap türü / Bağlı hesaplar).
+6. **App Settings → Basic**'ten **App ID** ve **App Secret**'ı kopyala,
+   Vercel'e ekle: `META_APP_ID`, `META_APP_SECRET`.
+
+**Not**: Meta'nın app review'ü onaylanana kadar sadece 4. adımda eklediğin
+test kullanıcıları bağlanıp yayınlayabilir — herkese açık kullanım için
+review şart (2-4 hafta sürebiliyor).
+
+### 3. TikTok
+
+1. [developers.tiktok.com](https://developers.tiktok.com) → **Manage
+   apps → Create an app**.
+2. Uygulama panelinde **Add products → Content Posting API**.
+3. **Redirect URI**'a şunu ekle:
+   `https://<vercel-domain-adresin>/api/auth/tiktok/callback`
+4. **Client key** ve **Client secret**'ı kopyala, Vercel'e ekle:
+   `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`.
+
+**Not**: Uygulaman TikTok'un **audit** sürecinden geçene kadar yayınlar
+sadece sana özel (gizli/taslak) olarak paylaşılabilir — herkese açık
+paylaşım için audit onayı gerekiyor (~1-2+ hafta). Audit onaylandıktan
+sonra Vercel'e `TIKTOK_AUDITED=true` ekle, o andan itibaren yayınlar
+herkese açık olur.
+
+### 4. Bağlan ve yayınla
+
+Env değişkenlerini ekledikten sonra Vercel'de projeyi yeniden deploy et
+(Settings → Deployments → son deploy → **Redeploy**), sonra dashboard'da
+üst menüden **Bağlı Hesaplar**'a gidip her platformu **Bağlan**'a tıklayarak
+bağla. Bağlandıktan sonra tamamlanmış her videonun sayfasında platforma
+özel **"Yayınla"** butonları görünür.
+
 ## Sonraki fazlar
 
 Faz 1-3 tamamlandı: ilk gerçek video, tekrarlanabilir/dayanıklı üretim

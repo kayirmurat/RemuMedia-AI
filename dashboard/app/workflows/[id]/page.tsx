@@ -6,6 +6,8 @@ import ReviseForm from "./ReviseForm";
 import ApproveButton from "./ApproveButton";
 import ArtifactPreview from "./ArtifactPreview";
 import ScriptEditor from "./ScriptEditor";
+import PublishButtons from "./PublishButtons";
+import { listConnections } from "../../../lib/platformConnections";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +93,21 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
 
   const finalVideoArtifact = findLatest("final_video");
   const imageArtifacts = artifacts.filter((a) => a.type === "image");
+
+  let connectedPlatforms: string[] = [];
+  let publicationsByPlatform: Record<string, { status: string; remoteUrl: string | null }> = {};
+  if (phase === "completed") {
+    const connections = await listConnections();
+    connectedPlatforms = connections.map((c) => c.platform);
+    const { data: pubsData } = await client
+      .from("publications")
+      .select("*")
+      .eq("workflow_id", params.id)
+      .order("created_at", { ascending: true });
+    for (const pub of pubsData ?? []) {
+      publicationsByPlatform[pub.platform] = { status: pub.status, remoteUrl: pub.remote_url };
+    }
+  }
 
   return (
     <>
@@ -213,6 +230,13 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
         <div className="card">
           <h2 style={{ marginTop: 0, fontSize: 15 }}>Final video</h2>
           <ArtifactPreview artifact={finalVideoArtifact} />
+          <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+          <h3 className="mb-2 text-sm font-semibold text-ink">Yayınla</h3>
+          <PublishButtons
+            workflowId={workflow.id}
+            connectedPlatforms={connectedPlatforms}
+            publications={publicationsByPlatform}
+          />
           <div style={{ marginTop: 10 }}>
             <ApproveButton
               artifactId={finalVideoArtifact.id}
