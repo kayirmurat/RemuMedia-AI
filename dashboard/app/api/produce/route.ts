@@ -12,6 +12,7 @@ const SCOPE_RESET_FROM: Record<string, (typeof STEP_ORDER)[number]> = {
   scriptManual: "script", // Kullanıcının kendi düzenlediği metin — brief AYNEN kalır, LLM'e gitmez
   scenes: "visualPlan", // Sahne planı/Kurgu — senaryo metni AYNEN kalır
   music: "musicSelection", // Arka plan müziği — sahneler/görseller/ses AYNEN kalır
+  musicManual: "musicSelection", // Kütüphaneden doğrudan seçilen parça — LLM'e gitmez
   voice: "voice", // Seslendirme — sahneler/görseller AYNEN kalır
   subtitles: "subtitles", // Altyazı — ses/görseller AYNEN kalır
   render: "assembly", // Sadece montaj/geçişleri güncel kodla yeniden render et
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       const feedback = String(body.feedback ?? "").trim();
       const voiceName = body.voiceName ? String(body.voiceName) : undefined;
       const manualScript = scope === "scriptManual" ? String(body.script ?? "").trim() : undefined;
+      const trackId = scope === "musicManual" ? String(body.trackId ?? "").trim() : undefined;
       const fromStep = SCOPE_RESET_FROM[scope];
 
       if (!workflowId || !fromStep) {
@@ -61,6 +63,9 @@ export async function POST(req: NextRequest) {
       }
       if (scope === "scriptManual" && !manualScript) {
         return NextResponse.json({ error: "Senaryo metni boş olamaz." }, { status: 400 });
+      }
+      if (scope === "musicManual" && !trackId) {
+        return NextResponse.json({ error: "trackId gerekli." }, { status: 400 });
       }
 
       const client = supabaseServer();
@@ -88,6 +93,9 @@ export async function POST(req: NextRequest) {
       }
       if (manualScript) {
         workflow.context = { ...workflow.context, scriptOverride: manualScript };
+      }
+      if (trackId) {
+        workflow.context = { ...workflow.context, musicTrackOverride: trackId };
       }
       workflow.updated_at = new Date().toISOString();
 

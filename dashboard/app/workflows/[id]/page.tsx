@@ -7,6 +7,7 @@ import ApproveButton from "./ApproveButton";
 import ArtifactPreview from "./ArtifactPreview";
 import ScriptEditor from "./ScriptEditor";
 import PublishButtons from "./PublishButtons";
+import MusicPicker from "./MusicPicker";
 import { listConnections } from "../../../lib/platformConnections";
 
 export const dynamic = "force-dynamic";
@@ -230,6 +231,12 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
         <div className="card">
           <h2 style={{ marginTop: 0, fontSize: 15 }}>Final video</h2>
           <ArtifactPreview artifact={finalVideoArtifact} />
+          <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+          <h3 className="mb-2 text-sm font-semibold text-ink">Arka plan müziği</h3>
+          <MusicPicker
+            workflowId={workflow.id}
+            currentTrackId={(workflow.context.musicTrackId as string | null) ?? null}
+          />
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <h3 className="mb-2 text-sm font-semibold text-ink">Yayınla</h3>
           <PublishButtons

@@ -34,6 +34,31 @@ export function createMusicSelectionStep(
         return { contextPatch: { musicPath: null, musicTrackId: null }, costUsd: 0 };
       }
 
+      // Kullanıcı dashboard'da kütüphaneden doğrudan bir parça seçmiş olabilir
+      // — bu durumda LLM'e hiç gitmeden (maliyet $0) onu aynen kullan.
+      const manualOverride = state.context.musicTrackOverride as string | undefined;
+      if (manualOverride && tracks.some((t) => t.id === manualOverride)) {
+        const track = tracks.find((t) => t.id === manualOverride)!;
+        const musicPath = path.join(path.dirname(manifestPath), track.filename);
+        const artifact = await createTextArtifact({
+          storage,
+          workflowId,
+          type: "music_selection",
+          content: JSON.stringify({ trackId: track.id, filename: track.filename }, null, 2),
+          extension: ".json",
+          provider: "manual",
+          model: "manual",
+          costUsd: 0,
+        });
+        return {
+          artifacts: [artifact],
+          contextPatch: { musicPath, musicTrackId: track.id, musicTrackOverride: undefined },
+          costUsd: 0,
+          provider: "manual",
+          model: "manual",
+        };
+      }
+
       const script = state.context.script as string;
       const revisionNotes = state.context.revisionNotes as string[] | undefined;
       const latestFeedback = revisionNotes?.at(-1);
