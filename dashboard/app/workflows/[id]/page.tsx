@@ -103,7 +103,8 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
   const imageArtifacts = artifacts.filter((a) => a.type === "image");
 
   let connectedPlatforms: string[] = [];
-  let publicationsByPlatform: Record<string, { status: string; remoteUrl: string | null }> = {};
+  let publicationsByPlatform: Record<string, { status: string; remoteUrl: string | null; warning: string | null }> =
+    {};
   if (phase === "completed") {
     const connections = await listConnections();
     connectedPlatforms = connections.map((c) => c.platform);
@@ -113,7 +114,11 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
       .eq("workflow_id", params.id)
       .order("created_at", { ascending: true });
     for (const pub of pubsData ?? []) {
-      publicationsByPlatform[pub.platform] = { status: pub.status, remoteUrl: pub.remote_url };
+      publicationsByPlatform[pub.platform] = {
+        status: pub.status,
+        remoteUrl: pub.remote_url,
+        warning: pub.status === "published" ? pub.error : null,
+      };
     }
   }
 

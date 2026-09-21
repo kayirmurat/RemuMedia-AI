@@ -5,7 +5,7 @@ import { useState } from "react";
 interface Props {
   workflowId: string;
   connectedPlatforms: string[];
-  publications: Record<string, { status: string; remoteUrl: string | null }>;
+  publications: Record<string, { status: string; remoteUrl: string | null; warning: string | null }>;
 }
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -73,6 +73,11 @@ export default function PublishButtons({ workflowId, connectedPlatforms, publica
                 <a href={published.remoteUrl} target="_blank" rel="noreferrer">
                   {published.remoteUrl}
                 </a>
+              </p>
+            )}
+            {published?.status === "published" && published.warning && (
+              <p style={{ color: "var(--warn)" }} className="mt-1">
+                ⚠️ {published.warning}
               </p>
             )}
             {messages[platform] && <p className="muted mt-1">{messages[platform]}</p>}

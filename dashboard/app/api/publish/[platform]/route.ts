@@ -112,6 +112,11 @@ export async function POST(req: NextRequest, { params }: { params: { platform: s
       status: "published",
       remoteId: result.remoteId,
       remoteUrl: result.remoteUrl || null,
+      // "error" alanı burada gerçek bir hatayı değil, yayın başarılı olsa
+      // da örn. kapak fotoğrafı ayarlanamadığında dönen uyarıyı taşıyor —
+      // önceden bu uyarı sadece o anki ekranda gösterilip kayboluyordu,
+      // artık kalıcı olarak saklanıp workflow sayfasında görünüyor.
+      error: result.warning ?? null,
     });
 
     return NextResponse.json({ ok: true, ...result });
