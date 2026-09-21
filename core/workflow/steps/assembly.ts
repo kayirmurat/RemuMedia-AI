@@ -3,30 +3,10 @@ import type { AspectRatio, Renderer } from "../../providers/renderer.js";
 import type { StorageProvider } from "../../providers/storage.js";
 import type { ArtifactRepository } from "../../repository/types.js";
 import type { StepDefinition } from "../engine.js";
-import type { Artifact, ArtifactType, Scene } from "../../domain/types.js";
+import type { Scene } from "../../domain/types.js";
 import { createFileArtifact } from "../../artifacts/artifactFactory.js";
 import { newId } from "../../domain/ids.js";
-
-// Aynı tipten (ör. bir "Yeniden Yaz" sonrası) birden fazla artifact varsa en
-// son oluşturulanı seçer — sahne numarasına göre (image/voice) ya da tek bir
-// en son artifact olarak (subtitles).
-function latestBySceneNumber(artifacts: Artifact[], type: ArtifactType): Map<number, Artifact> {
-  const map = new Map<number, Artifact>();
-  for (const artifact of artifacts) {
-    if (artifact.type !== type) continue;
-    const sceneNumber = artifact.metadata.sceneNumber as number | undefined;
-    if (sceneNumber === undefined) continue;
-    const existing = map.get(sceneNumber);
-    if (!existing || artifact.createdAt > existing.createdAt) map.set(sceneNumber, artifact);
-  }
-  return map;
-}
-
-function latestOfType(artifacts: Artifact[], type: ArtifactType): Artifact | undefined {
-  return artifacts
-    .filter((a) => a.type === type)
-    .reduce<Artifact | undefined>((latest, a) => (!latest || a.createdAt > latest.createdAt ? a : latest), undefined);
-}
+import { latestBySceneNumber, latestOfType } from "./artifactLookup.js";
 
 export function createAssemblyStep(
   renderer: Renderer,
@@ -101,35 +81,8 @@ export function createAssemblyStep(
         },
       });
 
-      // Kapak fotoğrafı: ilk (hook) sahnenin görseline, o sahnenin anlatım
-      // metnini (visualPlan kuralına göre bu zaten SADECE hook cümlesidir)
-      // bindirerek üretilir — video kare yakalamak yerine bilinçli tasarlanmış,
-      // platformlarda kapak olarak kullanılabilecek bir görsel olur.
-      const hookScene = scenes[0]!;
-      const hookImageArtifact = imageBySceneNumber.get(hookScene.sceneNumber);
-      if (!hookImageArtifact) throw new Error("İlk sahne için görsel bulunamadı (kapak fotoğrafı)");
-      const hookImagePath = await storage.ensureLocalFile(
-        hookImageArtifact.path,
-        path.join(tempDir, `${newId()}${path.extname(hookImageArtifact.path) || ".png"}`),
-      );
-      const thumbnailPath = path.join(tempDir, `${newId()}.jpg`);
-      await renderer.renderCoverImage({
-        imagePath: hookImagePath,
-        hookText: hookScene.narration,
-        aspectRatio,
-        outputPath: thumbnailPath,
-      });
-      const thumbnailArtifact = await createFileArtifact({
-        storage,
-        workflowId,
-        type: "thumbnail",
-        localFilePath: thumbnailPath,
-        costUsd: 0,
-        metadata: { hookText: hookScene.narration },
-      });
-
       return {
-        artifacts: [artifact, thumbnailArtifact],
+        artifacts: [artifact],
         contextPatch: { finalVideoPath: filePath },
         costUsd: 0,
       };

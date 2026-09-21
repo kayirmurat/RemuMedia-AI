@@ -45,6 +45,7 @@ export const STEP_ORDER = [
   "subtitles",
   "assembly",
   "qc",
+  "coverImage",
 ] as const;
 
 export type WorkflowPhase = "review" | "running" | "completed" | "failed";

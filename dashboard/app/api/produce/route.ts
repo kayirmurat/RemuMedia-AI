@@ -16,13 +16,14 @@ const SCOPE_RESET_FROM: Record<string, (typeof STEP_ORDER)[number]> = {
   voice: "voice", // Seslendirme — sahneler/görseller AYNEN kalır
   subtitles: "subtitles", // Altyazı — ses/görseller AYNEN kalır
   render: "assembly", // Sadece montaj/geçişleri güncel kodla yeniden render et
+  cover: "coverImage", // Sadece kapak fotoğrafı — videonun geri kalanı AYNEN kalır
 };
 
 // Senaryo/sahne değişikliği görsel+ses üretimine (maliyetli kısım) geçmeden
-// önce kullanıcının onayına sunulmalı. Ses/altyazı/montaj değişiklikleri
+// önce kullanıcının onayına sunulmalı. Ses/altyazı/montaj/kapak değişiklikleri
 // senaryoyu/sahneleri etkilemediği için doğrudan sonuna kadar çalışabilir.
 const SCOPES_NEEDING_REVIEW_GATE = new Set(["script", "scriptManual", "scenes"]);
-const SCOPES_NEEDING_FEEDBACK = new Set(["script", "scenes"]);
+const SCOPES_NEEDING_FEEDBACK = new Set(["script", "scenes", "cover"]);
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -93,7 +94,9 @@ export async function POST(req: NextRequest) {
         workflow.steps[stepName] = { status: "pending", artifactIds: [], cost: 0 } as StepRecord;
       }
 
-      if (feedback) {
+      if (feedback && scope === "cover") {
+        workflow.context = { ...workflow.context, coverFeedback: feedback };
+      } else if (feedback) {
         const revisionNotes = [...((workflow.context.revisionNotes as string[] | undefined) ?? []), feedback];
         workflow.context = { ...workflow.context, revisionNotes };
       }

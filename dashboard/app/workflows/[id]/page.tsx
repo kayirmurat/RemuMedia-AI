@@ -28,6 +28,7 @@ const STEP_LABEL: Record<string, string> = {
   subtitles: "Altyazı",
   assembly: "Montaj",
   qc: "Kalite kontrolü",
+  coverImage: "Kapak fotoğrafı",
 };
 
 interface Scene {
@@ -298,7 +299,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <ReviseForm
             workflowId={workflow.id}
-            scopes={["script", "scenes", "music", "voice", "subtitles", "render"]}
+            scopes={["script", "scenes", "music", "voice", "subtitles", "render", "cover"]}
           />
         </div>
       )}

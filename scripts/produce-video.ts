@@ -30,6 +30,7 @@ import { createVoiceStep } from "../core/workflow/steps/voice.js";
 import { createSubtitlesStep } from "../core/workflow/steps/subtitles.js";
 import { createAssemblyStep } from "../core/workflow/steps/assembly.js";
 import { createQcStep } from "../core/workflow/steps/qc.js";
+import { createCoverImageStep } from "../core/workflow/steps/coverImage.js";
 
 const DEFAULT_MAX_COST_USD = 2.0;
 
@@ -148,6 +149,7 @@ async function main() {
     createSubtitlesStep(storage),
     createAssemblyStep(renderer, storage, artifactRepo, storageDir, tempDir),
     createQcStep(renderer, storage),
+    createCoverImageStep(llm, renderer, storage, artifactRepo, tempDir),
   ];
 
   if (stopAfter) {
