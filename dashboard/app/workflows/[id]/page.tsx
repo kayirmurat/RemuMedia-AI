@@ -8,6 +8,7 @@ import ArtifactPreview from "./ArtifactPreview";
 import ScriptEditor from "./ScriptEditor";
 import PublishButtons from "./PublishButtons";
 import MusicPicker from "./MusicPicker";
+import VoicePicker from "./VoicePicker";
 import { listConnections } from "../../../lib/platformConnections";
 
 export const dynamic = "force-dynamic";
@@ -215,6 +216,12 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
               )}
             </>
           )}
+          <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+          <VoicePicker
+            workflowId={workflow.id}
+            currentVoiceName={(workflow.context.voiceName as string | undefined) ?? "nova"}
+          />
+          <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <ReviseForm workflowId={workflow.id} scopes={["script", "scenes"]} showContinue />
         </div>
       )}

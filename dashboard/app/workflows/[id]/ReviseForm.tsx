@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { VOICE_OPTIONS } from "../../../lib/voiceOptions";
 
 const SCOPE_LABELS: Record<string, string> = {
   script: "Senaryo / Metin (hook dahil)",
@@ -11,15 +12,6 @@ const SCOPE_LABELS: Record<string, string> = {
   subtitles: "Altyazı",
   render: "Sadece montajı yenile (geçiş/efekt kod güncellemelerini uygular)",
 };
-
-const VOICE_OPTIONS = [
-  { value: "nova", label: "Nova (canlı, feminen)" },
-  { value: "shimmer", label: "Shimmer (yumuşak, feminen)" },
-  { value: "alloy", label: "Alloy (nötr)" },
-  { value: "echo", label: "Echo (erkeksi)" },
-  { value: "fable", label: "Fable (İngiliz aksanlı, erkeksi)" },
-  { value: "onyx", label: "Onyx (derin, erkeksi)" },
-];
 
 const SCOPES_NEEDING_FEEDBACK = new Set(["script", "scenes"]);
 

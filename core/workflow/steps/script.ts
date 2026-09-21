@@ -55,7 +55,9 @@ export function createScriptStep(
         "- Brief'teki hook ile başla — ilk cümle jenerik/klişe olmasın, doğrudan çarpıcı/merak uyandırıcı " +
         "bilgiyle açılsın, izleyiciyi ilk 3 saniyede durdurmalı.\n" +
         "- Sahneler arasında merak/gerilim koru (bir sonraki cümleyi merak ettirecek şekilde ilerle), " +
-        "ana fikirle bitir." +
+        "ana fikirle bitir.\n" +
+        '- Sayı/birim/sembol içeren ifadeleri SESLİ OKUNACAĞI GİBİ yaz, sembol kullanma ' +
+        '(ör. "30°C" değil "30 derece", "%50" değil "yüzde elli" yaz).' +
         (latestFeedback
           ? `\n\nÖNEMLİ — kullanıcı önceki taslak için şu geri bildirimi verdi, bunu mutlaka dikkate al:\n"${latestFeedback}"`
           : "");

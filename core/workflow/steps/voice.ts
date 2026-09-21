@@ -3,6 +3,7 @@ import type { StorageProvider } from "../../providers/storage.js";
 import type { StepDefinition } from "../engine.js";
 import type { Scene } from "../../domain/types.js";
 import { createFileArtifact } from "../../artifacts/artifactFactory.js";
+import { normalizeForSpeech } from "../../text/normalizeForSpeech.js";
 
 export interface VoiceScene {
   sceneNumber: number;
@@ -23,7 +24,7 @@ export function createVoiceStep(voice: VoiceProvider, storage: StorageProvider):
       let model: string | undefined;
 
       for (const scene of scenes) {
-        const result = await voice.synthesize(scene.narration, voiceName);
+        const result = await voice.synthesize(normalizeForSpeech(scene.narration), voiceName);
         totalCost += result.costUsd;
         provider = result.provider;
         model = result.model;

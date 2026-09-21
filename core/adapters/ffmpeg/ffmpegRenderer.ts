@@ -35,8 +35,18 @@ const ZOOM_OVERSCAN = 1.3;
 const ZOOM_STEP_PER_FRAME = 0.001;
 const ZOOM_MAX = 1.15;
 // Arka plan müziği seslendirmenin altında, dikkat dağıtmayacak seviyede
-// çalsın diye düşük tutuluyor.
-const MUSIC_VOLUME = 0.15;
+// çalsın diye düşük tutuluyor. Bu taban seviyeye ek olarak, konuşma
+// sırasında müziği daha da kısan "ducking" (sidechaincompress) uygulanıyor —
+// bkz. aşağıdaki filtre zinciri.
+const MUSIC_VOLUME = 0.1;
+// Ducking (sidechaincompress) ayarları: seslendirme belirli bir eşiğin
+// üzerine çıktığında müzik hızla kısılır (attack), konuşma bitince yavaşça
+// eski seviyesine döner (release) — böylece müzik konuşmayı bastırmaz ama
+// sessiz anlarda tamamen kaybolmaz.
+const DUCK_THRESHOLD = 0.05;
+const DUCK_RATIO = 8;
+const DUCK_ATTACK_MS = 5;
+const DUCK_RELEASE_MS = 300;
 
 export class FfmpegRenderer implements Renderer {
   private ffmpegBinary: string;
@@ -157,8 +167,18 @@ export class FfmpegRenderer implements Renderer {
 
     if (musicPath) {
       filterComplex +=
-        `;[${musicInputIndex}:a]volume=${MUSIC_VOLUME}[amusic]` +
-        `;[avoice][amusic]amix=inputs=2:duration=first:dropout_transition=0[aout]`;
+        // ffmpeg filtergraph'ında bir link etiketi yalnızca TEK bir filtreye
+        // girdi olabilir — aynı sesi (avoice) hem ducking tetikleyicisi hem
+        // de son mix'e girdi olarak kullanmak için asplit ile çoğaltılıyor.
+        `;[avoice]asplit=2[avoice_sc][avoice_mix]` +
+        `;[${musicInputIndex}:a]volume=${MUSIC_VOLUME}[amusicvol]` +
+        // Sidechaincompress: ana giriş (amusicvol) konuşma (avoice_sc) yüksek
+        // sesle çaldığında otomatik kısılır — "duck" edilir.
+        `;[amusicvol][avoice_sc]sidechaincompress=threshold=${DUCK_THRESHOLD}:ratio=${DUCK_RATIO}:` +
+        `attack=${DUCK_ATTACK_MS}:release=${DUCK_RELEASE_MS}[amusicducked]` +
+        // normalize=0: amix'in giriş sayısına göre otomatik ses kısma
+        // davranışı seslendirmeyi de kısıyordu, kapatılıyor.
+        `;[avoice_mix][amusicducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]`;
     }
 
     args.push(
