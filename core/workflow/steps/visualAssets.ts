@@ -1,15 +1,29 @@
+import path from "node:path";
 import type { ImageProvider } from "../../providers/image.js";
 import type { StorageProvider } from "../../providers/storage.js";
 import type { StepDefinition } from "../engine.js";
 import type { Scene } from "../../domain/types.js";
 import { createFileArtifact } from "../../artifacts/artifactFactory.js";
+import { compositeCharacterOntoBackground } from "../../adapters/ffmpeg/compositeCharacter.js";
+import { newId } from "../../domain/ids.js";
 
 export interface ImageScene {
   sceneNumber: number;
   imagePath: string;
 }
 
-export function createVisualAssetsStep(image: ImageProvider, storage: StorageProvider): StepDefinition {
+// characterOverlayPath verilirse (ör. "Dünya Turunda Bir Aile" serisi), AI
+// SADECE mekanı/arka planı üretir (bkz. visualPlan.ts'deki "no people" kuralı)
+// ve her sahnenin üzerine hep AYNI, önceden üretilmiş sabit karakter görseli
+// bindirilir — karakterler hiç AI tarafından üretilmediği için video boyunca
+// %100 tutarlı kalır, AI'nin sahne sahne farklı insanlar üretme sorunu da
+// hiç yaşanmaz.
+export function createVisualAssetsStep(
+  image: ImageProvider,
+  storage: StorageProvider,
+  tempDir?: string,
+  characterOverlayPath?: string,
+): StepDefinition {
   return {
     name: "visualAssets",
     async run({ workflowId, state }) {
@@ -35,11 +49,22 @@ export function createVisualAssetsStep(image: ImageProvider, storage: StoragePro
         provider = result.provider;
         model = result.model;
 
+        let localImagePath = result.filePath;
+        if (characterOverlayPath && tempDir) {
+          const compositePath = path.join(tempDir, `${newId()}.png`);
+          await compositeCharacterOntoBackground({
+            backgroundPath: result.filePath,
+            characterPath: characterOverlayPath,
+            outputPath: compositePath,
+          });
+          localImagePath = compositePath;
+        }
+
         const artifact = await createFileArtifact({
           storage,
           workflowId,
           type: "image",
-          localFilePath: result.filePath,
+          localFilePath: localImagePath,
           provider: result.provider,
           model: result.model,
           costUsd: result.costUsd,

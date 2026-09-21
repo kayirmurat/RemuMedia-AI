@@ -51,11 +51,16 @@ function parseArgs() {
     stopAfter: get("--stop-after"),
     sceneCount,
     productionNote: get("--production-note"),
+    // Sabit karakter serisi (ör. "Dünya Turunda Bir Aile"): verilen PNG'nin
+    // (şeffaf arkaplanlı) her sahnenin arka planına bindirilmesini sağlar,
+    // AI o sahnelerde hiç insan/karakter üretmez.
+    character: get("--character"),
   };
 }
 
 async function main() {
-  const { topic, workflowId: existingId, maxCostUsd, stopAfter, sceneCount, productionNote } = parseArgs();
+  const { topic, workflowId: existingId, maxCostUsd, stopAfter, sceneCount, productionNote, character } =
+    parseArgs();
   if (!topic && !existingId) {
     console.log(
       'Konu verilmedi — sistem editör gibi kendi ilginç bir konu seçecek. ' +
@@ -141,10 +146,10 @@ async function main() {
     createResearchStep(llm, storage, logger),
     createBriefStep(llm, storage),
     createScriptStep(llm, storage, sceneCount ? sceneCount * 4 : undefined),
-    createVisualPlanStep(llm, storage, sceneCount),
+    createVisualPlanStep(llm, storage, sceneCount, Boolean(character)),
     createContentReviewStep(llm, storage, registry),
     createMusicSelectionStep(llm, storage, musicManifestPath),
-    createVisualAssetsStep(image, storage),
+    createVisualAssetsStep(image, storage, tempDir, character),
     createVoiceStep(voice, storage),
     createSubtitlesStep(storage),
     createAssemblyStep(renderer, storage, artifactRepo, storageDir, tempDir),

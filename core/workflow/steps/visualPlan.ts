@@ -49,6 +49,7 @@ export function createVisualPlanStep(
   llm: LLMProvider,
   storage: StorageProvider,
   sceneCount?: number,
+  characterSeriesMode?: boolean,
 ): StepDefinition {
   return {
     name: "visualPlan",
@@ -56,6 +57,11 @@ export function createVisualPlanStep(
       const script = state.context.script as string;
       const revisionNotes = state.context.revisionNotes as string[] | undefined;
       const latestFeedback = revisionNotes?.at(-1);
+      const characterRule = characterSeriesMode
+        ? "\n\nÖNEMLİ: Bu video sabit bir karakter serisi için üretiliyor — ailenin görseli AYRICA " +
+          "videonun üzerine bindirilecek. Bu yüzden TÜM imagePrompt'lar SADECE mekanı/arka planı " +
+          "betimlesin, hiçbir insan/karakter/figür/kalabalık İÇERMESİN (boş bir mekan/manzara olsun)."
+        : "";
       const sceneCountText = sceneCount
         ? `TAM OLARAK ${sceneCount} sahneye`
         : `YAKLAŞIK ${estimateAutoSceneCount(script)} sahneye (her sahne ortalama ${TARGET_SECONDS_PER_SCENE} ` +
@@ -92,8 +98,9 @@ export function createVisualPlanStep(
         "plandaki figürler kendiliğinden ek, bozuk yazılı pankartlarla doluyor). Protesto/kalabalık " +
         "sahnelerinde pankart/tabela nesnesinden TAMAMEN kaçın, bunun yerine sahneyi yazısız unsurlarla " +
         "anlat (kalabalık, yumruklar, " +
-        "bayraklar, mimari, ışık/atmosfer). Görselde hiçbir YAZI/METİN olmasın.\n\n" +
-        "SADECE geçerli bir JSON dizisi döndür, başka hiçbir açıklama yazma:\n" +
+        "bayraklar, mimari, ışık/atmosfer). Görselde hiçbir YAZI/METİN olmasın." +
+        characterRule +
+        "\n\nSADECE geçerli bir JSON dizisi döndür, başka hiçbir açıklama yazma:\n" +
         '[{"narration": "...", "imagePrompt": "..."}]' +
         (latestFeedback
           ? `\n\nÖNEMLİ — kullanıcı sahne planı için şu geri bildirimi verdi, bunu mutlaka dikkate al:\n"${latestFeedback}"`
