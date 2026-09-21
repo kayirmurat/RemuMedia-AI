@@ -33,5 +33,13 @@ export interface Renderer {
     musicPath?: string | null;
   }): Promise<RenderResult>;
   probe(filePath: string): Promise<MediaProbe>;
-  extractThumbnail(videoPath: string, outputPath: string, atSeconds?: number): Promise<void>;
+  // Videonun ilk (hook) sahnesinin görseline çarpıcı bir başlık metni
+  // bindirerek platformlarda (YouTube/Instagram) kapak fotoğrafı olarak
+  // kullanılabilecek tek karelik bir görsel üretir.
+  renderCoverImage(params: {
+    imagePath: string;
+    hookText: string;
+    aspectRatio: AspectRatio;
+    outputPath: string;
+  }): Promise<void>;
 }

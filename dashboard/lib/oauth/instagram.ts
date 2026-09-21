@@ -92,6 +92,7 @@ export async function publishReel(params: {
   accessToken: string;
   videoUrl: string;
   caption: string;
+  coverUrl?: string;
 }): Promise<{ mediaId: string; url: string }> {
   const createRes = await fetch(
     `https://graph.facebook.com/${GRAPH_VERSION}/${params.igAccountId}/media`,
@@ -103,6 +104,9 @@ export async function publishReel(params: {
         video_url: params.videoUrl,
         caption: params.caption.slice(0, 2200),
         access_token: params.accessToken,
+        // cover_url verilmezse Instagram videodan otomatik bir kare seçer
+        // (thumb_offset=0) — kendi tasarladığımız hook kapağını istiyoruz.
+        ...(params.coverUrl ? { cover_url: params.coverUrl } : {}),
       }),
     },
   );

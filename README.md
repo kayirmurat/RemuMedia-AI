@@ -231,7 +231,27 @@ paylaşım için audit onayı gerekiyor (~1-2+ hafta). Audit onaylandıktan
 sonra Vercel'e `TIKTOK_AUDITED=true` ekle, o andan itibaren yayınlar
 herkese açık olur.
 
-### 4. Bağlan ve yayınla
+**Kapak fotoğrafı sınırlaması**: TikTok'un Content Posting API'si özel bir
+görseli kapak olarak yüklemeyi desteklemiyor (sadece videonun içinden bir
+kare/zaman damgası seçilebiliyor) — bu yüzden aşağıdaki hook kapağı
+sadece YouTube ve Instagram'da kullanılabiliyor, TikTok kendi varsayılan
+kare seçimini yapıyor.
+
+### 4. Kapak fotoğrafı
+
+Her video için, ilk (hook) sahnenin görseline o sahnenin anlatım metni
+büyük/kalın bir başlık olarak bindirilerek otomatik bir kapak fotoğrafı
+üretiliyor (video tamamlandığında `thumbnail` artifact'ı olarak kaydedilir,
+dashboard'da video kütüphanesinde de önizleme olarak görünür). Yayınlarken:
+
+- **YouTube**: video yüklendikten sonra bu görsel özel kapak fotoğrafı
+  olarak ayarlanır. Bu, YouTube kanalının **telefonla doğrulanmış**
+  olmasını gerektiriyor — doğrulanmamış kanallarda video yine de yayınlanır
+  ama kapak ayarlama adımı başarısız olur ve bunu bir uyarı olarak görürsün.
+- **Instagram**: Reels yayınlanırken bu görsel `cover_url` olarak gönderilir.
+- **TikTok**: yukarıdaki nota bak.
+
+### 5. Bağlan ve yayınla
 
 Env değişkenlerini ekledikten sonra Vercel'de projeyi yeniden deploy et
 (Settings → Deployments → son deploy → **Redeploy**), sonra dashboard'da

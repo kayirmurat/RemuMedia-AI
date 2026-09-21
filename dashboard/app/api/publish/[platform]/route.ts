@@ -45,7 +45,17 @@ export async function POST(req: NextRequest, { params }: { params: { platform: s
     const scriptArtifact = (scriptArtifactRes.data as ArtifactRow[] | null)?.[0];
     const scriptText = scriptArtifact ? await readArtifactText(scriptArtifact.path) : "";
 
-    let result: { remoteId: string; remoteUrl: string };
+    const thumbnailRes = await client
+      .from("artifacts")
+      .select("*")
+      .eq("workflow_id", workflowId)
+      .eq("type", "thumbnail")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const thumbnailArtifact = (thumbnailRes.data as ArtifactRow[] | null)?.[0];
+    const coverUrl = thumbnailArtifact ? await getArtifactSignedUrl(thumbnailArtifact.path) : null;
+
+    let result: { remoteId: string; remoteUrl: string; warning?: string };
 
     if (platform === "youtube") {
       const accessToken = await getValidAccessToken("youtube");
@@ -56,6 +66,18 @@ export async function POST(req: NextRequest, { params }: { params: { platform: s
         description: scriptText || workflow.topic,
       });
       result = { remoteId: uploaded.videoId, remoteUrl: uploaded.url };
+      // Kapak fotoğrafı yükleme, kanal telefonla doğrulanmamışsa başarısız
+      // olabiliyor — bu, videonun kendisinin başarıyla yayınlanmasını
+      // engellemesin, sadece kullanıcıya bir uyarı olarak dönsün.
+      if (coverUrl) {
+        try {
+          await youtube.setThumbnail({ accessToken, videoId: uploaded.videoId, imageUrl: coverUrl });
+        } catch (thumbError) {
+          result.warning = `Video yayınlandı ama kapak fotoğrafı ayarlanamadı: ${
+            thumbError instanceof Error ? thumbError.message : String(thumbError)
+          }`;
+        }
+      }
     } else if (platform === "instagram") {
       const connection = await getConnection("instagram");
       if (!connection) throw new Error("Instagram hesabı bağlı değil.");
@@ -64,9 +86,14 @@ export async function POST(req: NextRequest, { params }: { params: { platform: s
         accessToken: connection.access_token,
         videoUrl,
         caption: scriptText || workflow.topic,
+        coverUrl: coverUrl ?? undefined,
       });
       result = { remoteId: published.mediaId, remoteUrl: published.url };
     } else if (platform === "tiktok") {
+      // NOT: TikTok'un Content Posting API'si özel bir görseli kapak olarak
+      // yüklemeyi desteklemiyor — sadece videonun içinden bir zaman damgası
+      // seçilebiliyor (video_cover_timestamp_ms). Bu yüzden coverUrl burada
+      // kullanılmıyor; TikTok kendi varsayılan kare seçimini yapıyor.
       const accessToken = await getValidAccessToken("tiktok");
       const published = await tiktok.publishVideo({
         accessToken,

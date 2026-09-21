@@ -29,7 +29,8 @@ export default function PublishButtons({ workflowId, connectedPlatforms, publica
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Bilinmeyen hata");
-      setMessages((m) => ({ ...m, [platform]: `Yayınlandı! ${json.remoteUrl ?? ""}`.trim() }));
+      const base = `Yayınlandı! ${json.remoteUrl ?? ""}`.trim();
+      setMessages((m) => ({ ...m, [platform]: json.warning ? `${base} (${json.warning})` : base }));
     } catch (err) {
       setMessages((m) => ({ ...m, [platform]: err instanceof Error ? err.message : String(err) }));
     } finally {

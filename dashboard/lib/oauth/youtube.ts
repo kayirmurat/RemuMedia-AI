@@ -120,3 +120,30 @@ export async function uploadVideo(params: {
 
   return { videoId: json.id, url: `https://youtube.com/shorts/${json.id}` };
 }
+
+// YouTube API'sinde özel kapak fotoğrafı yükleme, kanal telefonla
+// doğrulanmış olmayı gerektiriyor — doğrulanmamış kanallarda bu istek
+// başarısız olur. Bu yüzden çağıran taraf (publish route) bu hatayı
+// videonun kendisinin yüklenmesini engellemeyecek şekilde ele almalı.
+export async function setThumbnail(params: {
+  accessToken: string;
+  videoId: string;
+  imageUrl: string;
+}): Promise<void> {
+  const imageRes = await fetch(params.imageUrl);
+  if (!imageRes.ok) throw new Error("Kapak fotoğrafı indirilemedi");
+  const imageBuffer = await imageRes.arrayBuffer();
+
+  const res = await fetch(
+    `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${params.videoId}&uploadType=media`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.accessToken}`,
+        "Content-Type": "image/jpeg",
+      },
+      body: imageBuffer,
+    },
+  );
+  if (!res.ok) throw new Error(`YouTube kapak fotoğrafı yüklenemedi: ${await res.text()}`);
+}

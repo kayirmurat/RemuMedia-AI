@@ -101,14 +101,31 @@ export function createAssemblyStep(
         },
       });
 
+      // Kapak fotoğrafı: ilk (hook) sahnenin görseline, o sahnenin anlatım
+      // metnini (visualPlan kuralına göre bu zaten SADECE hook cümlesidir)
+      // bindirerek üretilir — video kare yakalamak yerine bilinçli tasarlanmış,
+      // platformlarda kapak olarak kullanılabilecek bir görsel olur.
+      const hookScene = scenes[0]!;
+      const hookImageArtifact = imageBySceneNumber.get(hookScene.sceneNumber);
+      if (!hookImageArtifact) throw new Error("İlk sahne için görsel bulunamadı (kapak fotoğrafı)");
+      const hookImagePath = await storage.ensureLocalFile(
+        hookImageArtifact.path,
+        path.join(tempDir, `${newId()}${path.extname(hookImageArtifact.path) || ".png"}`),
+      );
       const thumbnailPath = path.join(tempDir, `${newId()}.jpg`);
-      await renderer.extractThumbnail(filePath, thumbnailPath);
+      await renderer.renderCoverImage({
+        imagePath: hookImagePath,
+        hookText: hookScene.narration,
+        aspectRatio,
+        outputPath: thumbnailPath,
+      });
       const thumbnailArtifact = await createFileArtifact({
         storage,
         workflowId,
         type: "thumbnail",
         localFilePath: thumbnailPath,
         costUsd: 0,
+        metadata: { hookText: hookScene.narration },
       });
 
       return {

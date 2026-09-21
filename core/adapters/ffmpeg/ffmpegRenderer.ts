@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createRequire } from "node:module";
+import { randomUUID } from "node:crypto";
 
 const require = createRequire(import.meta.url);
 const ffmpegPath = require("ffmpeg-static") as string | null;
@@ -48,6 +49,14 @@ const DUCK_RATIO = 8;
 const DUCK_ATTACK_MS = 5;
 const DUCK_RELEASE_MS = 300;
 
+// Kapak fotoğrafındaki hook metni, altyazıdan çok daha büyük ve göz alıcı
+// olmalı (küçük ekranda/feed'de akarken dikkat çekmesi gerekiyor). Boyut
+// çıktı genişliğine oranla hesaplanıyor ki 9:16/16:9/1:1 hepsinde tutarlı
+// görünsün. Değer, 1080 genişlikte görsel olarak denenip iyi görünen
+// FontSize=24'ten türetildi — libass'ın FontSize'ı doğrudan piksel olarak
+// yorumlamadığını, PlayRes tabanlı bir ölçekleme uyguladığını unutma.
+const COVER_FONT_SIZE_RATIO = 24 / 1080;
+
 export class FfmpegRenderer implements Renderer {
   private ffmpegBinary: string;
   private fontsDir: string;
@@ -64,18 +73,51 @@ export class FfmpegRenderer implements Renderer {
     return probeMedia(filePath);
   }
 
-  async extractThumbnail(videoPath: string, outputPath: string, atSeconds = 1): Promise<void> {
+  async renderCoverImage(params: {
+    imagePath: string;
+    hookText: string;
+    aspectRatio: AspectRatio;
+    outputPath: string;
+  }): Promise<void> {
+    const { imagePath, hookText, aspectRatio, outputPath } = params;
+    const { width, height } = ASPECT_RATIO_RESOLUTIONS[aspectRatio];
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.mkdirSync(this.tempDir, { recursive: true });
+
+    const fontSize = Math.round(width * COVER_FONT_SIZE_RATIO);
+
+    // Metni kendimiz satırlara bölmüyoruz — 'subtitles' filtresi (libass)
+    // tek bir uzun satırı verilen FontSize'a göre çerçeve genişliğine
+    // otomatik sarıyor, bu da her en-boy oranında (9:16/16:9/1:1) manuel
+    // karakter/genişlik hesabından çok daha güvenilir sonuç veriyor.
+    const srtPath = path.join(this.tempDir, `cover-${randomUUID()}.srt`);
+    fs.writeFileSync(srtPath, `1\n00:00:00,000 --> 00:00:01,000\n${hookText}\n`);
+
+    const srtPart = escapeFilterValue(srtPath);
+    const fontsDirPart = escapeFilterValue(this.fontsDir);
+    // BorderStyle=3: arkada opak bir kutu çizer — fotoğraf ne kadar
+    // karmaşık/parlak olursa olsun metin okunur kalır (sadece dış çizgiyle
+    // yetinen altyazı stilinden farklı olarak). Alignment=2 (alt-orta)
+    // bilinçli seçildi — bu force_style'da denenen üst hizalama (7-9)
+    // değerleri bu ffmpeg/libass sürümünde beklendiği gibi çalışmadı.
+    const forceStyle = escapeFilterValue(
+      `FontName=${SUBTITLE_FONT_NAME},Bold=1,FontSize=${fontSize},PrimaryColour=&H00FFFFFF,` +
+        `BorderStyle=3,BackColour=&H99000000,Outline=8,Shadow=0,Alignment=2,MarginV=${Math.round(height * 0.06)}`,
+    );
+
     await execFileAsync(this.ffmpegBinary, [
       "-y",
-      "-ss",
-      String(atSeconds),
+      "-loop",
+      "1",
       "-i",
-      videoPath,
+      imagePath,
+      "-vf",
+      `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},` +
+        `subtitles='${srtPart}':fontsdir='${fontsDirPart}':force_style='${forceStyle}'`,
       "-frames:v",
       "1",
       "-q:v",
-      "3",
+      "2",
       outputPath,
     ]);
   }
