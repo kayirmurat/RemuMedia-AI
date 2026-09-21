@@ -31,10 +31,19 @@ export async function POST(req: NextRequest) {
 
   try {
     if (mode === "new") {
+      // Konu opsiyonel — boş bırakılırsa sistem editör gibi kendi ilginç bir
+      // konu seçer (bkz. core/workflow/steps/topicSelection.ts).
       const topic = String(body.topic ?? "").trim();
-      if (!topic) return NextResponse.json({ error: "Konu boş olamaz." }, { status: 400 });
+      const sceneCount = body.sceneCount ? String(body.sceneCount) : undefined;
+      const productionNote = body.productionNote ? String(body.productionNote).trim() : undefined;
 
-      await dispatchProduceWorkflow({ topic, stop_after: "contentReview", max_cost: maxCost });
+      await dispatchProduceWorkflow({
+        ...(topic ? { topic } : {}),
+        stop_after: "contentReview",
+        max_cost: maxCost,
+        ...(sceneCount ? { scene_count: sceneCount } : {}),
+        ...(productionNote ? { production_note: productionNote } : {}),
+      });
       return NextResponse.json({ ok: true });
     }
 

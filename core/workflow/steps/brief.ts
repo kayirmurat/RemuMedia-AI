@@ -13,6 +13,7 @@ export function createBriefStep(llm: LLMProvider, storage: StorageProvider): Ste
       const research = state.context.research as string;
       const revisionNotes = state.context.revisionNotes as string[] | undefined;
       const latestFeedback = revisionNotes?.at(-1);
+      const productionNote = state.context.productionNote as string | undefined;
 
       const prompt =
         `Konu: "${state.topic}"\n\nAraştırma notları:\n${research}\n\n` +
@@ -25,6 +26,9 @@ export function createBriefStep(llm: LLMProvider, storage: StorageProvider): Ste
         "- Hedef kitle\n" +
         "- Video sonunda izleyicide kalacak tek bir ana fikir\n" +
         "Düz metin olarak yaz." +
+        (productionNote
+          ? `\n\nKullanıcının ton/stil için ek isteği (konuyu değiştirme, sadece üsluba yansıt): "${productionNote}"`
+          : "") +
         (latestFeedback
           ? `\n\nÖNEMLİ — kullanıcı önceki taslak için şu geri bildirimi verdi, bunu mutlaka dikkate al:\n"${latestFeedback}"`
           : "");

@@ -20,6 +20,14 @@ on:
         required: false
         type: string
         default: "2.0"
+      scene_count:
+        description: "Sahne sayısı (boş bırakılırsa 6-9 arası otomatik)"
+        required: false
+        type: string
+      production_note:
+        description: "Ton/format için ek not (konu olarak kullanılmaz)"
+        required: false
+        type: string
 
 jobs:
   produce:
@@ -43,14 +51,24 @@ jobs:
           TOPIC: ${{ inputs.topic }}
           WORKFLOW_ID: ${{ inputs.workflow_id }}
           STOP_AFTER: ${{ inputs.stop_after }}
+          SCENE_COUNT: ${{ inputs.scene_count }}
+          PRODUCTION_NOTE: ${{ inputs.production_note }}
         run: |
           args=()
           if [ -n "$WORKFLOW_ID" ]; then
             args+=(--id "$WORKFLOW_ID")
           else
-            args+=(--topic "$TOPIC")
+            if [ -n "$TOPIC" ]; then
+              args+=(--topic "$TOPIC")
+            fi
           fi
           if [ -n "$STOP_AFTER" ]; then
             args+=(--stop-after "$STOP_AFTER")
+          fi
+          if [ -n "$SCENE_COUNT" ]; then
+            args+=(--scenes "$SCENE_COUNT")
+          fi
+          if [ -n "$PRODUCTION_NOTE" ]; then
+            args+=(--production-note "$PRODUCTION_NOTE")
           fi
           npm run produce -- "${args[@]}"

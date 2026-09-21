@@ -27,9 +27,22 @@ Yeni bir video üretmek için:
 npm run produce -- --topic "Konunu buraya yaz"
 ```
 
-Terminalde her adım ilerledikçe log görürsün (araştırma → brief → senaryo →
-sahne planı → içerik incelemesi → görseller → seslendirme → altyazı →
-montaj → kalite kontrolü).
+**Konu opsiyoneldir** — `--topic` vermezsen sistem bir editör gibi kendi
+ilginç ve daha önce işlenmemiş bir konu seçer (bkz. `topicSelection` adımı).
+Böylece "12 sahneli, ilginç bir video yap" gibi bir FORMAT talimatını yanlışlıkla
+konu sanıp o talimat hakkında video üretmez — format isteklerini ayrı
+bayraklarla ver:
+
+```
+npm run produce -- --scenes 12 --production-note "eğlenceli bir tonda olsun"
+```
+
+`--production-note`, konuyu değiştirmeden sadece ton/stile yansıtılan ek bir
+istektir (dashboard'da "Prodüksiyon notu" alanına karşılık gelir).
+
+Terminalde her adım ilerledikçe log görürsün (konu seçimi → araştırma → brief →
+senaryo → sahne planı → içerik incelemesi → müzik seçimi → görseller →
+seslendirme → altyazı → montaj → kalite kontrolü).
 Sonunda toplam tahmini maliyet ve final video dosyasının yolu yazdırılır
 (örn. `storage/<workflow-id>-final.mp4`).
 

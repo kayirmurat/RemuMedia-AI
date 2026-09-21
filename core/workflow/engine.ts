@@ -45,6 +45,10 @@ export class CostLimitExceededError extends Error {
 
 export interface WorkflowRunOptions {
   maxCostUsd?: number;
+  // Sadece workflow İLK kez oluşturulurken context'e eklenir (ör. kullanıcının
+  // ton/format için verdiği bir prodüksiyon notu) — devam eden bir workflow'da
+  // yok sayılır.
+  initialContext?: Record<string, unknown>;
 }
 
 export class WorkflowEngine {
@@ -70,7 +74,7 @@ export class WorkflowEngine {
         steps: Object.fromEntries(
           steps.map((s) => [s.name, { status: "pending" as const, artifactIds: [], cost: 0 }]),
         ),
-        context: { topic },
+        context: { topic, ...options.initialContext },
       };
       await this.workflowRepo.save(state);
     }

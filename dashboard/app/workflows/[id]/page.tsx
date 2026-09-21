@@ -13,6 +13,7 @@ import { listConnections } from "../../../lib/platformConnections";
 export const dynamic = "force-dynamic";
 
 const STEP_LABEL: Record<string, string> = {
+  topicSelection: "Konu seçimi",
   research: "Araştırma",
   brief: "Brief",
   script: "Senaryo",

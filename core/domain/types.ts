@@ -21,6 +21,7 @@ export interface WorkflowState {
 }
 
 export type ArtifactType =
+  | "topic_selection"
   | "research"
   | "brief"
   | "script"

@@ -18,6 +18,7 @@ import { OpenAIVoiceProvider } from "../core/adapters/openai/openaiVoiceProvider
 import { FfmpegRenderer } from "../core/adapters/ffmpeg/ffmpegRenderer.js";
 import { ContentRegistry } from "../core/registry/contentRegistry.js";
 import { createLogger } from "../core/logger/logger.js";
+import { createTopicSelectionStep } from "../core/workflow/steps/topicSelection.js";
 import { createResearchStep } from "../core/workflow/steps/research.js";
 import { createBriefStep } from "../core/workflow/steps/brief.js";
 import { createScriptStep } from "../core/workflow/steps/script.js";
@@ -48,17 +49,17 @@ function parseArgs() {
     maxCostUsd,
     stopAfter: get("--stop-after"),
     sceneCount,
+    productionNote: get("--production-note"),
   };
 }
 
 async function main() {
-  const { topic, workflowId: existingId, maxCostUsd, stopAfter, sceneCount } = parseArgs();
+  const { topic, workflowId: existingId, maxCostUsd, stopAfter, sceneCount, productionNote } = parseArgs();
   if (!topic && !existingId) {
-    console.error(
-      'Kullanım: npm run produce -- --topic "konu" [--max-cost 2.5] [--stop-after contentReview] [--scenes 5]',
+    console.log(
+      'Konu verilmedi — sistem editör gibi kendi ilginç bir konu seçecek. ' +
+        '(Belirli bir konu istiyorsan: npm run produce -- --topic "konu")',
     );
-    console.error('          npm run produce -- --id <workflow-id>   (kaldığı yerden devam)');
-    process.exit(1);
   }
   if (Number.isNaN(maxCostUsd) || maxCostUsd <= 0) {
     console.error(`Geçersiz maliyet limiti: "${maxCostUsd}". Pozitif bir sayı olmalı.`);
@@ -111,8 +112,8 @@ async function main() {
   const workflowId = existingId ?? randomUUID();
 
   const existingState = await workflowRepo.get(workflowId);
-  const resolvedTopic = existingState?.topic ?? topic;
-  if (!resolvedTopic) {
+  const resolvedTopic = existingState?.topic ?? topic ?? "";
+  if (existingId && !existingState && !topic) {
     console.error(`Workflow "${workflowId}" bulunamadı ve --topic verilmedi.`);
     process.exit(1);
   }
@@ -135,6 +136,7 @@ async function main() {
   const engine = new WorkflowEngine(workflowRepo, artifactRepo, logger);
 
   let steps = [
+    createTopicSelectionStep(llm, storage, registry, productionNote),
     createResearchStep(llm, storage, logger),
     createBriefStep(llm, storage),
     createScriptStep(llm, storage, sceneCount ? sceneCount * 4 : undefined),
@@ -157,9 +159,17 @@ async function main() {
     steps = steps.slice(0, cutoff + 1);
   }
 
-  logger.info("Video üretim workflow'u başlıyor", { workflowId, topic: resolvedTopic, maxCostUsd, stopAfter });
+  logger.info("Video üretim workflow'u başlıyor", {
+    workflowId,
+    topic: resolvedTopic || "(AI seçecek)",
+    maxCostUsd,
+    stopAfter,
+  });
 
-  const finalState = await engine.run(workflowId, resolvedTopic, steps, { maxCostUsd });
+  const finalState = await engine.run(workflowId, resolvedTopic, steps, {
+    maxCostUsd,
+    initialContext: productionNote ? { productionNote } : undefined,
+  });
 
   console.log("\n--- ÖZET ---");
   console.log(`Workflow ID: ${finalState.id}`);
