@@ -62,10 +62,11 @@ export function createVisualPlanStep(
           "saniyelik konuşmaya karşılık gelecek şekilde — görsel çok uzun süre ekranda sabit kalırsa izleyicinin " +
           "ilgisi dağılır, bu yüzden kısa tutulmalı)";
       const prompt =
+        `Video konusu: "${state.topic}"\n\n` +
         `Anlatım senaryosu:\n${script}\n\n` +
         `Bu senaryoyu ${sceneCountText} böl. Her sahne için:\n` +
         '- "narration": o sahnede seslendirilecek metnin senaryodan BİREBİR alınan parçası (tüm parçalar birleşince senaryonun tamamını oluşturmalı)\n' +
-        '- "imagePrompt": bu sahneyi görselleştirecek, İngilizce, detaylı bir görsel üretim promptu (temiz, fotogerçekçi veya editoryal illüstrasyon stili; görselde YAZI/METİN olmasın)\n\n' +
+        '- "imagePrompt": bu sahneyi görselleştirecek, İngilizce, detaylı bir görsel üretim promptu (temiz, fotogerçekçi veya editoryal illüstrasyon stili)\n\n' +
         "Bölme kuralları:\n" +
         "- Sahneleri mümkün olduğunca DENGELİ uzunlukta böl — en uzun sahnenin narration'ı en kısa sahnenin " +
         "2 katından uzun olmasın. Tek bir sahne birden fazla cümleyi/fikri yutup senaryonun büyük bir kısmını " +
@@ -77,6 +78,21 @@ export function createVisualPlanStep(
         "kuralından ve hedef sahne sayısından ÖNCELİKLİDİR — gerekirse hedef sayıdan daha fazla sahne kullan.\n" +
         "- İlk sahne SADECE açılış/hook cümlesini içersin — hook'u bir sonraki cümleyle birleştirip " +
         "uzatma.\n\n" +
+        "imagePrompt yazarken şu iki kurala KESİNLİKLE uy:\n" +
+        "1. GÖRSEL, VİDEONUN KONUSUNA AÇIKÇA BAĞLI OLMALI. Özellikle hook/giriş ve soyut/genel geçiş " +
+        "cümlelerinde (ör. \"biliyor muydunuz\", \"hikaye burada bitmiyor\" gibi yer adı GEÇMEYEN " +
+        "cümlelerde) imagePrompt'a videonun konusuyla ilgili somut, tanınabilir görsel/mimari/coğrafi " +
+        "unsurlar (şehir, ülke, dönem, yapı tarzı vb.) EKLE — jenerik/kimliksiz bir görsel üretme (ör. " +
+        "İstanbul'la ilgili bir videoda \"a park in a city\" değil, \"a park in Istanbul with Ottoman-era " +
+        "architecture/Bosphorus view\" gibi somut ol).\n" +
+        "2. Görsel üretim modelleri OKUNABİLİR METNİ GÜVENİLİR ÇİZEMİYOR — pankart, tabela, gazete " +
+        "manşeti gibi üzerinde yazı olması beklenen nesnelerin İMAGEPROMPT'TA HİÇ GEÇMEMESİNİ sağla " +
+        "(\"holding banners/signs\" gibi ifadeler bile modele metin yazdırmaya itiyor ve neredeyse her " +
+        "zaman anlamsız/bozuk karakterlerle sonuçlanıyor — bir sahnede TEK bir pankart istesen bile arka " +
+        "plandaki figürler kendiliğinden ek, bozuk yazılı pankartlarla doluyor). Protesto/kalabalık " +
+        "sahnelerinde pankart/tabela nesnesinden TAMAMEN kaçın, bunun yerine sahneyi yazısız unsurlarla " +
+        "anlat (kalabalık, yumruklar, " +
+        "bayraklar, mimari, ışık/atmosfer). Görselde hiçbir YAZI/METİN olmasın.\n\n" +
         "SADECE geçerli bir JSON dizisi döndür, başka hiçbir açıklama yazma:\n" +
         '[{"narration": "...", "imagePrompt": "..."}]' +
         (latestFeedback
