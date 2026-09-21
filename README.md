@@ -94,15 +94,21 @@ kullanır; boşsa sessizce yerel moda döner.
 
 Her adımın tahmini maliyeti (OpenAI fiyatlandırmasına göre yaklaşık) workflow
 JSON'ında (`data/workflows/<id>.json`) ve çalışma sonundaki özet çıktısında
-görünür. Bir video şu an sahne sayısına göre yaklaşık **$0.6-1.0** civarında
-(maliyetin büyük kısmı görsel üretiminden geliyor). Gerçek harcamayı periyodik
-olarak platform.openai.com/usage üzerinden kontrol etmen önerilir — buradaki
-tahminler OpenAI'nin token bazlı fiyatlandırmasına dayanan yaklaşık
-değerlerdir, kesin fatura değildir.
+görünür. Sahne sayısı belirtilmezse sistem, görsel çok uzun süre ekranda
+sabit kalıp izleyicinin ilgisini dağıtmasın diye sahne başına ortalama ~3.5
+saniyelik konuşmaya karşılık gelecek şekilde OTOMATİK ve önceki sabit
+"6-9 sahne" aralığından genelde daha FAZLA sahne kullanıyor (bkz.
+`core/workflow/steps/visualPlan.ts`) — bu yüzden tipik bir video artık
+sahne sayısına göre yaklaşık **$1-2** civarında (maliyetin büyük kısmı
+$0.065/görsel üzerinden görsel üretiminden geliyor). Gerçek harcamayı
+periyodik olarak platform.openai.com/usage üzerinden kontrol etmen
+önerilir — buradaki tahminler OpenAI'nin token bazlı fiyatlandırmasına
+dayanan yaklaşık değerlerdir, kesin fatura değildir.
 
 **Maliyet limiti**: toplam tahmini maliyet `.env`'deki `MAX_COST_PER_VIDEO`
 değerini (varsayılan $2.00) aşarsa üretim otomatik durur, tamamlanan adımlar
-korunur. Tek seferlik farklı bir limit için:
+korunur. Daha uzun/yoğun sahneli videolar için bu limiti yükseltmen
+gerekebilir — dashboard'daki "Maks. maliyet" alanından ya da tek seferlik:
 ```
 npm run produce -- --topic "konu" --max-cost 5
 ```

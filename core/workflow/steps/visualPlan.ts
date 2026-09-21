@@ -24,6 +24,27 @@ function normalizeForComparison(text: string): string {
 // hata verir (kullanıcı tekrar deneyebilir) — sessizce geçmez.
 const NARRATION_LENGTH_TOLERANCE = 0.15;
 
+// Gerçek üretimlerden kalibre edilmiş ortalama Türkçe TTS hızı (karakter/saniye).
+// Sahne sayısı kullanıcı tarafından belirtilmemişse, senaryonun tahmini konuşma
+// süresinden otomatik bir hedef sahne sayısı hesaplamak için kullanılıyor —
+// sabit "6-9 sahne" yerine, sahne başına düşen konuşma süresi ne kadar uzun
+// olursa görsel o kadar ekranda sabit kalır ve bu izleyicinin ilgisini dağıtır.
+const CHARS_PER_SECOND_ESTIMATE = 13;
+// Hedef: her sahne ortalama bu kadar saniyelik konuşmaya karşılık gelsin —
+// görsel sık değişsin diye kısa tutuluyor (bkz. kullanıcı geri bildirimi).
+const TARGET_SECONDS_PER_SCENE = 3.5;
+const MIN_AUTO_SCENE_COUNT = 6;
+// Çok uzun senaryolarda sahne (=görsel) sayısının kontrolsüz artıp maliyeti
+// patlatmasına karşı bir üst sınır — MAX_COST_PER_VIDEO zaten genel bir
+// güvence ama bu, workflow'un daha başlamadan makul bir aralıkta kalmasını sağlar.
+const MAX_AUTO_SCENE_COUNT = 40;
+
+function estimateAutoSceneCount(script: string): number {
+  const estimatedSeconds = script.replace(/\s+/g, " ").trim().length / CHARS_PER_SECOND_ESTIMATE;
+  const target = Math.round(estimatedSeconds / TARGET_SECONDS_PER_SCENE);
+  return Math.min(MAX_AUTO_SCENE_COUNT, Math.max(MIN_AUTO_SCENE_COUNT, target));
+}
+
 export function createVisualPlanStep(
   llm: LLMProvider,
   storage: StorageProvider,
@@ -35,7 +56,11 @@ export function createVisualPlanStep(
       const script = state.context.script as string;
       const revisionNotes = state.context.revisionNotes as string[] | undefined;
       const latestFeedback = revisionNotes?.at(-1);
-      const sceneCountText = sceneCount ? `TAM OLARAK ${sceneCount} sahneye` : "6-9 sahneye";
+      const sceneCountText = sceneCount
+        ? `TAM OLARAK ${sceneCount} sahneye`
+        : `YAKLAŞIK ${estimateAutoSceneCount(script)} sahneye (her sahne ortalama ${TARGET_SECONDS_PER_SCENE} ` +
+          "saniyelik konuşmaya karşılık gelecek şekilde — görsel çok uzun süre ekranda sabit kalırsa izleyicinin " +
+          "ilgisi dağılır, bu yüzden kısa tutulmalı)";
       const prompt =
         `Anlatım senaryosu:\n${script}\n\n` +
         `Bu senaryoyu ${sceneCountText} böl. Her sahne için:\n` +
@@ -45,6 +70,11 @@ export function createVisualPlanStep(
         "- Sahneleri mümkün olduğunca DENGELİ uzunlukta böl — en uzun sahnenin narration'ı en kısa sahnenin " +
         "2 katından uzun olmasın. Tek bir sahne birden fazla cümleyi/fikri yutup senaryonun büyük bir kısmını " +
         "üstlenmesin.\n" +
+        "- ÖNEMLİ: Senaryo farklı, ayrı isimlere/konulara sahip öğelerden oluşuyorsa (ör. birden fazla yer, " +
+        "kişi, olay, nesne), HER ÖĞE kendi sahnesini alsın. İki farklı öğeyi (ör. iki farklı mekan) AYNI " +
+        "sahnede birleştirme — bir görsel tek bir şeyi net şekilde resmedebilir, iki farklı konuyu aynı anda " +
+        "göstermeye çalışmak görseli anlamsız/karışık hale getirir. Bu kural, yukarıdaki uzunluk dengesi " +
+        "kuralından ve hedef sahne sayısından ÖNCELİKLİDİR — gerekirse hedef sayıdan daha fazla sahne kullan.\n" +
         "- İlk sahne SADECE açılış/hook cümlesini içersin — hook'u bir sonraki cümleyle birleştirip " +
         "uzatma.\n\n" +
         "SADECE geçerli bir JSON dizisi döndür, başka hiçbir açıklama yazma:\n" +
