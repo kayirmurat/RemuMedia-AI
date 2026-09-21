@@ -35,19 +35,22 @@ const TRANSITION_DURATION = 0.7;
 const ZOOM_OVERSCAN = 1.3;
 const ZOOM_STEP_PER_FRAME = 0.001;
 const ZOOM_MAX = 1.15;
-// Arka plan müziği seslendirmenin altında, dikkat dağıtmayacak seviyede
-// çalsın diye düşük tutuluyor. Bu taban seviyeye ek olarak, konuşma
-// sırasında müziği daha da kısan "ducking" (sidechaincompress) uygulanıyor —
-// bkz. aşağıdaki filtre zinciri.
-const MUSIC_VOLUME = 0.1;
+// Arka plan müziği seslendirmenin çok altında, adeta derinden/belli belirsiz
+// çalsın diye düşük tutuluyor (kullanıcı geri bildirimi: hâlâ çok yüksek
+// geliyordu, taban seviye ve ducking daha da agresifleştirildi). Bu taban
+// seviyeye ek olarak, konuşma sırasında müziği daha da kısan "ducking"
+// (sidechaincompress) uygulanıyor — bkz. aşağıdaki filtre zinciri.
+const MUSIC_VOLUME = 0.05;
 // Ducking (sidechaincompress) ayarları: seslendirme belirli bir eşiğin
 // üzerine çıktığında müzik hızla kısılır (attack), konuşma bitince yavaşça
 // eski seviyesine döner (release) — böylece müzik konuşmayı bastırmaz ama
-// sessiz anlarda tamamen kaybolmaz.
-const DUCK_THRESHOLD = 0.05;
-const DUCK_RATIO = 8;
+// sessiz anlarda tamamen kaybolmaz. threshold düşürüldü (daha kısık
+// konuşma anlarını da yakalasın), ratio yükseltildi (konuşma sırasında
+// müzik neredeyse duyulmaz hale gelsin).
+const DUCK_THRESHOLD = 0.03;
+const DUCK_RATIO = 20;
 const DUCK_ATTACK_MS = 5;
-const DUCK_RELEASE_MS = 300;
+const DUCK_RELEASE_MS = 400;
 
 // Kapak fotoğrafındaki hook metni, altyazıdan çok daha büyük ve göz alıcı
 // olmalı (küçük ekranda/feed'de akarken dikkat çekmesi gerekiyor). Boyut

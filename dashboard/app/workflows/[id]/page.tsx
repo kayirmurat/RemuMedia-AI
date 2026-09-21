@@ -10,6 +10,7 @@ import PublishButtons from "./PublishButtons";
 import MusicPicker from "./MusicPicker";
 import MusicPreferencePicker from "./MusicPreferencePicker";
 import VoicePicker from "./VoicePicker";
+import Thumbnail from "../../Thumbnail";
 import { listConnections } from "../../../lib/platformConnections";
 
 export const dynamic = "force-dynamic";
@@ -96,6 +97,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
   }
 
   const finalVideoArtifact = findLatest("final_video");
+  const thumbnailArtifact = findLatest("thumbnail");
   const imageArtifacts = artifacts.filter((a) => a.type === "image");
 
   let connectedPlatforms: string[] = [];
@@ -245,6 +247,35 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
         <div className="card">
           <h2 style={{ marginTop: 0, fontSize: 15 }}>Final video</h2>
           <ArtifactPreview artifact={finalVideoArtifact} />
+          <div style={{ marginTop: 10 }}>
+            <ApproveButton
+              artifactId={finalVideoArtifact.id}
+              approved={Boolean(finalVideoArtifact.metadata.approved)}
+            />
+          </div>
+          <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+          <h3 className="mb-2 text-sm font-semibold text-ink">Kapak fotoğrafı</h3>
+          {thumbnailArtifact ? (
+            <>
+              <p className="muted mb-2">
+                Platformlara yayınlanırken kapak fotoğrafı olarak bu görsel kullanılacak — önce
+                onaylaman gerekiyor.
+              </p>
+              <div style={{ maxWidth: 220 }}>
+                <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+                  <Thumbnail artifactId={thumbnailArtifact.id} />
+                </div>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <ApproveButton
+                  artifactId={thumbnailArtifact.id}
+                  approved={Boolean(thumbnailArtifact.metadata.approved)}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="muted">Bu üretim için bir kapak fotoğrafı bulunamadı.</p>
+          )}
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <h3 className="mb-2 text-sm font-semibold text-ink">Arka plan müziği</h3>
           <MusicPicker
@@ -253,17 +284,15 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
           />
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <h3 className="mb-2 text-sm font-semibold text-ink">Yayınla</h3>
-          <PublishButtons
-            workflowId={workflow.id}
-            connectedPlatforms={connectedPlatforms}
-            publications={publicationsByPlatform}
-          />
-          <div style={{ marginTop: 10 }}>
-            <ApproveButton
-              artifactId={finalVideoArtifact.id}
-              approved={Boolean(finalVideoArtifact.metadata.approved)}
+          {thumbnailArtifact && !thumbnailArtifact.metadata.approved ? (
+            <p className="muted">Yayınlamadan önce yukarıdaki kapak fotoğrafını onaylaman gerekiyor.</p>
+          ) : (
+            <PublishButtons
+              workflowId={workflow.id}
+              connectedPlatforms={connectedPlatforms}
+              publications={publicationsByPlatform}
             />
-          </div>
+          )}
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <ScriptEditor workflowId={workflow.id} initialScript={scriptText} />
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
