@@ -11,6 +11,7 @@ import MusicPicker from "./MusicPicker";
 import MusicPreferencePicker from "./MusicPreferencePicker";
 import VoicePicker from "./VoicePicker";
 import Thumbnail from "../../Thumbnail";
+import CoverFeedbackForm from "./CoverFeedbackForm";
 import { listConnections } from "../../../lib/platformConnections";
 
 export const dynamic = "force-dynamic";
@@ -273,6 +274,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
                   approved={Boolean(thumbnailArtifact.metadata.approved)}
                 />
               </div>
+              <CoverFeedbackForm workflowId={workflow.id} />
             </>
           ) : (
             <p className="muted">Bu üretim için bir kapak fotoğrafı bulunamadı.</p>
@@ -299,7 +301,7 @@ export default async function WorkflowDetailPage({ params }: { params: { id: str
           <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
           <ReviseForm
             workflowId={workflow.id}
-            scopes={["script", "scenes", "music", "voice", "subtitles", "render", "cover"]}
+            scopes={["script", "scenes", "music", "voice", "subtitles", "render"]}
           />
         </div>
       )}

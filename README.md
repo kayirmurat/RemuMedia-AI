@@ -100,7 +100,9 @@ saniyelik konuşmaya karşılık gelecek şekilde OTOMATİK ve önceki sabit
 "6-9 sahne" aralığından genelde daha FAZLA sahne kullanıyor (bkz.
 `core/workflow/steps/visualPlan.ts`) — bu yüzden tipik bir video artık
 sahne sayısına göre yaklaşık **$1-2** civarında (maliyetin büyük kısmı
-$0.065/görsel üzerinden görsel üretiminden geliyor). Gerçek harcamayı
+$0.065/görsel üzerinden görsel üretiminden geliyor; kapak fotoğrafı için
+ayrı bir görsel üretimi de buna ~$0.065 daha ekliyor — her "Kapağı Bu
+Şekilde Düzelt" denemesi de aynı miktarda ek maliyete yol açar). Gerçek harcamayı
 periyodik olarak platform.openai.com/usage üzerinden kontrol etmen
 önerilir — buradaki tahminler OpenAI'nin token bazlı fiyatlandırmasına
 dayanan yaklaşık değerlerdir, kesin fatura değildir.
@@ -245,10 +247,21 @@ kare seçimini yapıyor.
 
 ### 4. Kapak fotoğrafı
 
-Her video için, ilk (hook) sahnenin görseline o sahnenin anlatım metni
-büyük/kalın bir başlık olarak bindirilerek otomatik bir kapak fotoğrafı
-üretiliyor (video tamamlandığında `thumbnail` artifact'ı olarak kaydedilir,
-dashboard'da video kütüphanesinde de önizleme olarak görünür). Yayınlarken:
+Kapak fotoğrafı BİLEREK videonun hiçbir sahnesini yeniden kullanmıyor —
+sahne görselleri o sahnenin anlatımına uygun (ör. karanlık/loş bir "dehşet"
+sahnesi) olabilir, ama bu kapak için kötü bir seçim olurdu. Bunun yerine
+`coverImage` adımı, videonun konusuna göre parlak/yüksek kontrastlı, tıklanmaya
+davet eden BAĞIMSIZ bir görsel üretir (küçük bir ek maliyetle, ~1 sahne
+görseli kadar) ve üzerine çarpıcı bir başlık bindirir (video tamamlandığında
+`thumbnail` artifact'ı olarak kaydedilir, dashboard'da video kütüphanesinde
+de önizleme olarak görünür).
+
+Tamamlanan videonun sayfasında kapak önizlemesinin altında **onaylaman**
+gerekiyor — onaylamadan platform "Yayınla" butonları görünmez. Beğenmezsen
+hemen altındaki kutuya ne istediğini yazıp ("görsel çok karanlık, daha
+aydınlık olsun", "metni kısalt" vb.) **"Kapağı Bu Şekilde Düzelt"**'e
+basman yeterli — videonun geri kalanı (ses/görsel/montaj) yeniden
+oluşturulmadan sadece kapak güncellenir. Yayınlarken:
 
 - **YouTube**: video yüklendikten sonra bu görsel özel kapak fotoğrafı
   olarak ayarlanır. Bu, YouTube kanalının **telefonla doğrulanmış**

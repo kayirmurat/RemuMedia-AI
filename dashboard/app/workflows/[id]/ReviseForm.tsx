@@ -11,10 +11,9 @@ const SCOPE_LABELS: Record<string, string> = {
   voice: "Seslendirme",
   subtitles: "Altyazı",
   render: "Sadece montajı yenile (geçiş/efekt kod güncellemelerini uygular)",
-  cover: "Kapak fotoğrafı",
 };
 
-const SCOPES_NEEDING_FEEDBACK = new Set(["script", "scenes", "cover"]);
+const SCOPES_NEEDING_FEEDBACK = new Set(["script", "scenes"]);
 
 export default function ReviseForm({
   workflowId,

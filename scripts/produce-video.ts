@@ -149,7 +149,7 @@ async function main() {
     createSubtitlesStep(storage),
     createAssemblyStep(renderer, storage, artifactRepo, storageDir, tempDir),
     createQcStep(renderer, storage),
-    createCoverImageStep(llm, renderer, storage, artifactRepo, tempDir),
+    createCoverImageStep(llm, image, renderer, storage, tempDir),
   ];
 
   if (stopAfter) {
