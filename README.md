@@ -263,10 +263,18 @@ aydınlık olsun", "metni kısalt" vb.) **"Kapağı Bu Şekilde Düzelt"**'e
 basman yeterli — videonun geri kalanı (ses/görsel/montaj) yeniden
 oluşturulmadan sadece kapak güncellenir. Yayınlarken:
 
-- **YouTube**: video yüklendikten sonra bu görsel özel kapak fotoğrafı
-  olarak ayarlanır. Bu, YouTube kanalının **telefonla doğrulanmış**
+- **YouTube**: video yüklendikten sonra bu görsel klasik `thumbnails.set`
+  API'siyle ayarlanır. Bu, YouTube kanalının **telefonla doğrulanmış**
   olmasını gerektiriyor — doğrulanmamış kanallarda video yine de yayınlanır
   ama kapak ayarlama adımı başarısız olur ve bunu bir uyarı olarak görürsün.
+  **Önemli sınırlama — Shorts kapağı**: bu API sadece yatay/kare boyutlarda
+  (120x90, 480x360, 1280x720 vb.) kapak üretiyor, hiç dikey (9:16) boyut
+  sunmuyor. Bu yüzden yüklediğimiz kapak, videonun normal video olarak
+  göründüğü yerlerde (arama sonuçları, önerilen videolar) kullanılıyor ama
+  **kanalın Shorts ızgarasında/Shorts akışında GÖRÜNMÜYOR** — orada YouTube
+  kendi otomatik seçtiği bir video karesini gösteriyor. Bunu değiştirecek
+  herkese açık bir API yok; sadece YouTube Studio'nun kendi Shorts
+  düzenleyicisinden video başına manuel olarak yapılabiliyor.
 - **Instagram**: Reels yayınlanırken bu görsel `cover_url` olarak gönderilir.
 - **TikTok**: yukarıdaki nota bak.
 
