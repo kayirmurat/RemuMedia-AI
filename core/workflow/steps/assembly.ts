@@ -27,11 +27,13 @@ export function createAssemblyStep(
       // yerel yolların artık geçersiz olduğu durumlarda da doğru çalışır.
       const artifacts = await artifactRepo.listByWorkflow(workflowId);
       const imageBySceneNumber = latestBySceneNumber(artifacts, "image");
+      const videoBySceneNumber = latestBySceneNumber(artifacts, "video");
       const voiceBySceneNumber = latestBySceneNumber(artifacts, "voice");
 
       const renderScenes = await Promise.all(
         scenes.map(async (scene) => {
           const imageArtifact = imageBySceneNumber.get(scene.sceneNumber);
+          const videoArtifact = videoBySceneNumber.get(scene.sceneNumber);
           const voiceArtifact = voiceBySceneNumber.get(scene.sceneNumber);
           if (!imageArtifact || !voiceArtifact) {
             throw new Error(`Sahne ${scene.sceneNumber} için görsel veya ses eksik`);
@@ -44,8 +46,18 @@ export function createAssemblyStep(
             voiceArtifact.path,
             path.join(tempDir, `${newId()}${path.extname(voiceArtifact.path) || ".mp3"}`),
           );
+          // videoAssets adımı çalıştıysa (akan video modu) her sahne için ayrıca
+          // bir "video" artifact'ı vardır — varsa statik görsel+Ken Burns yerine
+          // bu akan klip kullanılır.
+          const localVideoPath = videoArtifact
+            ? await storage.ensureLocalFile(
+                videoArtifact.path,
+                path.join(tempDir, `${newId()}${path.extname(videoArtifact.path) || ".mp4"}`),
+              )
+            : undefined;
           return {
             imagePath: localImagePath,
+            videoPath: localVideoPath,
             audioPath: localAudioPath,
             durationSeconds: voiceArtifact.metadata.durationSeconds as number,
           };

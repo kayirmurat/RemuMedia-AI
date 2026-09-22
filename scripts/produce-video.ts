@@ -29,8 +29,10 @@ import { createVisualAssetsStep } from "../core/workflow/steps/visualAssets.js";
 import { createVoiceStep } from "../core/workflow/steps/voice.js";
 import { createSubtitlesStep } from "../core/workflow/steps/subtitles.js";
 import { createAssemblyStep } from "../core/workflow/steps/assembly.js";
+import { createVideoAssetsStep } from "../core/workflow/steps/videoAssets.js";
 import { createQcStep } from "../core/workflow/steps/qc.js";
 import { createCoverImageStep } from "../core/workflow/steps/coverImage.js";
+import { SeedanceVideoProvider } from "../core/adapters/bytedance/seedanceVideoProvider.js";
 
 const DEFAULT_MAX_COST_USD = 2.0;
 
@@ -55,11 +57,15 @@ function parseArgs() {
     // (şeffaf arkaplanlı) her sahnenin arka planına bindirilmesini sağlar,
     // AI o sahnelerde hiç insan/karakter üretmez.
     character: get("--character"),
+    // Statik görsel + Ken Burns yerine, her sahneyi Seedance ile gerçekten
+    // AKAN kısa bir video klibe dönüştürür ("sabit görsel değil akan video
+    // istiyorum" geri bildirimi üzerine eklendi). Maliyetli ama isteğe bağlı.
+    video: args.includes("--video"),
   };
 }
 
 async function main() {
-  const { topic, workflowId: existingId, maxCostUsd, stopAfter, sceneCount, productionNote, character } =
+  const { topic, workflowId: existingId, maxCostUsd, stopAfter, sceneCount, productionNote, character, video } =
     parseArgs();
   if (!topic && !existingId) {
     console.log(
@@ -79,6 +85,11 @@ async function main() {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     console.error("OPENAI_API_KEY tanımlı değil. .env dosyanı kontrol et (bkz. .env.example).");
+    process.exit(1);
+  }
+  const arkApiKey = process.env.ARK_API_KEY;
+  if (video && !arkApiKey) {
+    console.error("--video için ARK_API_KEY tanımlı değil (BytePlus ModelArk / Seedance). .env dosyanı kontrol et.");
     process.exit(1);
   }
 
@@ -138,19 +149,28 @@ async function main() {
   const image = new OpenAIImageProvider(apiKey, tempDir);
   const voice = new OpenAIVoiceProvider(apiKey, tempDir);
   const renderer = new FfmpegRenderer(fontFile, tempDir);
+  const seedanceVideo = arkApiKey
+    ? new SeedanceVideoProvider(arkApiKey, tempDir, {
+        model: process.env.SEEDANCE_MODEL_ID,
+        pricePerSecondUsd: process.env.SEEDANCE_PRICE_PER_SECOND_USD
+          ? Number(process.env.SEEDANCE_PRICE_PER_SECOND_USD)
+          : undefined,
+      })
+    : undefined;
 
   const engine = new WorkflowEngine(workflowRepo, artifactRepo, logger);
 
   let steps = [
     createTopicSelectionStep(llm, storage, registry, productionNote),
     createResearchStep(llm, storage, logger),
-    createBriefStep(llm, storage),
-    createScriptStep(llm, storage, sceneCount ? sceneCount * 4 : undefined),
+    createBriefStep(llm, storage, Boolean(character)),
+    createScriptStep(llm, storage, sceneCount ? sceneCount * 4 : undefined, Boolean(character)),
     createVisualPlanStep(llm, storage, sceneCount, Boolean(character)),
     createContentReviewStep(llm, storage, registry),
     createMusicSelectionStep(llm, storage, musicManifestPath),
     createVisualAssetsStep(image, storage, tempDir, character),
     createVoiceStep(voice, storage),
+    ...(video && seedanceVideo ? [createVideoAssetsStep(seedanceVideo, storage, artifactRepo, tempDir)] : []),
     createSubtitlesStep(storage),
     createAssemblyStep(renderer, storage, artifactRepo, storageDir, tempDir),
     createQcStep(renderer, storage),

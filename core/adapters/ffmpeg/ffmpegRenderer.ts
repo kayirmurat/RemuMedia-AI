@@ -147,16 +147,23 @@ export class FfmpegRenderer implements Renderer {
 
     const args: string[] = ["-y"];
     scenes.forEach((scene, i) => {
-      args.push(
-        "-loop",
-        "1",
-        "-framerate",
-        String(FPS),
-        "-t",
-        renderDurations[i]!.toFixed(3),
-        "-i",
-        scene.imagePath,
-      );
+      if (scene.videoPath) {
+        // Akan video klip: kendi kare hızıyla girer, -t klibi tam olarak
+        // ihtiyaç duyulan süreye kırpar (klip her zaman bu süreden uzun
+        // üretilir, bkz. videoAssets.ts DURATION_BUFFER_SECONDS).
+        args.push("-t", renderDurations[i]!.toFixed(3), "-i", scene.videoPath);
+      } else {
+        args.push(
+          "-loop",
+          "1",
+          "-framerate",
+          String(FPS),
+          "-t",
+          renderDurations[i]!.toFixed(3),
+          "-i",
+          scene.imagePath,
+        );
+      }
     });
     for (const scene of scenes) {
       args.push("-i", scene.audioPath);
@@ -169,12 +176,16 @@ export class FfmpegRenderer implements Renderer {
       args.push("-stream_loop", "-1", "-i", musicPath);
     }
 
-    const videoChains = scenes.map(
-      (_, i) =>
-        `[${i}:v]scale=${bigWidth}:${bigHeight}:force_original_aspect_ratio=increase,` +
-        `crop=${bigWidth}:${bigHeight},` +
-        `zoompan=z='min(zoom+${ZOOM_STEP_PER_FRAME},${ZOOM_MAX})':d=1:` +
-        `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${FPS},setsar=1[v${i}]`,
+    const videoChains = scenes.map((scene, i) =>
+      scene.videoPath
+        ? // Akan video klip: kaynakta zaten hareket var, ek olarak sadece
+          // hedef çözünürlüğe ölçekle/kırp ve kare hızını sabitle.
+          `[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=increase,` +
+          `crop=${width}:${height},fps=${FPS},setsar=1[v${i}]`
+        : `[${i}:v]scale=${bigWidth}:${bigHeight}:force_original_aspect_ratio=increase,` +
+          `crop=${bigWidth}:${bigHeight},` +
+          `zoompan=z='min(zoom+${ZOOM_STEP_PER_FRAME},${ZOOM_MAX})':d=1:` +
+          `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${FPS},setsar=1[v${i}]`,
     );
 
     let videoTail = "v0";

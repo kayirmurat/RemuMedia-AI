@@ -28,6 +28,7 @@ export type ArtifactType =
   | "visual_plan"
   | "content_review"
   | "image"
+  | "video"
   | "voice"
   | "subtitles"
   | "final_video"

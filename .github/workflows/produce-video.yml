@@ -28,11 +28,22 @@ on:
         description: "Ton/format için ek not (konu olarak kullanılmaz)"
         required: false
         type: string
+      character:
+        description: "Sabit karakter PNG yolu (ör. assets/characters/wandering-family.png)"
+        required: false
+        type: string
+      video:
+        description: "Statik görsel yerine Seedance ile akan video klip üret (maliyetli)"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   produce:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Akan video modu (Seedance) sahne başına dakikalar sürebilir — normal
+    # (statik görsel) üretimler bu sürenin çok altında tamamlanır.
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -47,12 +58,17 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          SEEDANCE_MODEL_ID: ${{ secrets.SEEDANCE_MODEL_ID }}
+          SEEDANCE_PRICE_PER_SECOND_USD: ${{ secrets.SEEDANCE_PRICE_PER_SECOND_USD }}
           MAX_COST_PER_VIDEO: ${{ inputs.max_cost }}
           TOPIC: ${{ inputs.topic }}
           WORKFLOW_ID: ${{ inputs.workflow_id }}
           STOP_AFTER: ${{ inputs.stop_after }}
           SCENE_COUNT: ${{ inputs.scene_count }}
           PRODUCTION_NOTE: ${{ inputs.production_note }}
+          CHARACTER: ${{ inputs.character }}
+          VIDEO: ${{ inputs.video }}
         run: |
           args=()
           if [ -n "$WORKFLOW_ID" ]; then
@@ -70,5 +86,11 @@ jobs:
           fi
           if [ -n "$PRODUCTION_NOTE" ]; then
             args+=(--production-note "$PRODUCTION_NOTE")
+          fi
+          if [ -n "$CHARACTER" ]; then
+            args+=(--character "$CHARACTER")
+          fi
+          if [ "$VIDEO" = "true" ]; then
+            args+=(--video)
           fi
           npm run produce -- "${args[@]}"

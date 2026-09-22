@@ -2,6 +2,9 @@ export interface RenderScene {
   imagePath: string;
   audioPath: string;
   durationSeconds: number;
+  // Verilirse, sahne bu akan video klibiyle (Ken Burns yerine) render edilir —
+  // imagePath yine de kapak fotoğrafı gibi görsel-tabanlı ihtiyaçlar için tutulur.
+  videoPath?: string;
 }
 
 export type AspectRatio = "9:16" | "16:9" | "1:1";

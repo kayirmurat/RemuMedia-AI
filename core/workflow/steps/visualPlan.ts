@@ -72,7 +72,14 @@ export function createVisualPlanStep(
         `Anlatım senaryosu:\n${script}\n\n` +
         `Bu senaryoyu ${sceneCountText} böl. Her sahne için:\n` +
         '- "narration": o sahnede seslendirilecek metnin senaryodan BİREBİR alınan parçası (tüm parçalar birleşince senaryonun tamamını oluşturmalı)\n' +
-        '- "imagePrompt": bu sahneyi görselleştirecek, İngilizce, detaylı bir görsel üretim promptu (temiz, fotogerçekçi veya editoryal illüstrasyon stili)\n\n' +
+        (characterSeriesMode
+          ? '- "imagePrompt": bu sahneyi görselleştirecek, İngilizce, detaylı bir görsel üretim promptu. ' +
+            "STİL SABİT VE ZORUNLU: 'flat vector illustration style, simple clean geometric shapes, warm " +
+            "friendly colors, children's travel show aesthetic' — HER sahnede AYNI stil kelimelerini " +
+            "prompta ekle. FOTOGERÇEKÇİ, vintage fotoğraf, siyah-beyaz, yağlıboya tablo gibi farklı " +
+            "stiller KULLANMA — video boyunca üzerine bindirilecek sabit karakterle stil tutarlılığı " +
+            "bozulmasın diye tüm sahneler bu TEK illüstrasyon stilinde olmalı.\n\n"
+          : '- "imagePrompt": bu sahneyi görselleştirecek, İngilizce, detaylı bir görsel üretim promptu (temiz, fotogerçekçi veya editoryal illüstrasyon stili)\n\n') +
         "Bölme kuralları:\n" +
         "- Sahneleri mümkün olduğunca DENGELİ uzunlukta böl — en uzun sahnenin narration'ı en kısa sahnenin " +
         "2 katından uzun olmasın. Tek bir sahne birden fazla cümleyi/fikri yutup senaryonun büyük bir kısmını " +
